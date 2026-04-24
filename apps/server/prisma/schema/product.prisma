@@ -1,0 +1,46 @@
+model Product {
+  id              String    @id @default(cuid())
+  sku             String    @unique
+  slug            String    @unique
+  
+  nameEn          String
+  nameAr          String
+  descriptionEn   String?
+  descriptionAr   String?
+  shortDescEn     String?
+  shortDescAr     String?
+  
+  basePrice       Decimal   @db.Decimal(10, 2)
+  salePrice       Decimal?  @db.Decimal(10, 2)
+  costPrice       Decimal?  @db.Decimal(10, 2)
+  
+  
+  hasColorOptions Boolean   @default(false)
+  
+  metaTitleEn     String?
+  metaTitleAr     String?
+  metaDescEn      String?
+  metaDescAr      String?
+  
+  isFeatured      Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  isNewArrival    Boolean   @default(false)
+  
+  viewCount       Int       @default(0)
+  soldCount       Int       @default(0)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  variants        ProductVariant[]
+  images          ProductImage[]
+  sizeGuideImages SizeGuideImage[]
+  reviews         Review[]
+  collections     ProductCollection[]
+  wishlistItems   WishlistItem[]
+  featuredProduct FeaturedProduct?
+
+  @@index([isActive, isFeatured])
+  @@index([slug])
+  @@map("products")
+}

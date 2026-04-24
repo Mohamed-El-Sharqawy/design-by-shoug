@@ -1,0 +1,32 @@
+model Coupon {
+  id              String     @id @default(cuid())
+  code            String     @unique
+  
+  descriptionEn   String?
+  descriptionAr   String?
+  
+  type            CouponType
+  value           Decimal    @db.Decimal(10, 2)
+  
+  minOrderAmount  Decimal?   @db.Decimal(10, 2)
+  maxDiscount     Decimal?   @db.Decimal(10, 2)
+  
+  usageLimit      Int?
+  usageCount      Int        @default(0)
+  perUserLimit    Int        @default(1)
+  
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  
+  isActive        Boolean    @default(true)
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  orders          Order[]
+  carts           Cart[]
+
+  @@index([code])
+  @@index([isActive, expiresAt])
+  @@map("coupons")
+}

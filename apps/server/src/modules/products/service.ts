@@ -1,0 +1,317 @@
+import { prisma } from "@/lib/prisma";
+import { NotFoundError } from "@/lib/errors";
+import type {
+  CreateProductInput,
+  UpdateProductInput,
+  CreateVariantInput,
+  UpdateVariantInput,
+  ProductQueryInput,
+} from "./model";
+import type { Prisma } from "@generated/prisma/client";
+
+export abstract class ProductService {
+  static async getAll(query: ProductQueryInput) {
+    const page = parseInt(query.page || "1");
+    const limit = parseInt(query.limit || "20");
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ProductWhereInput = {};
+
+    if (query.search) {
+      where.OR = [
+        { nameEn: { contains: query.search, mode: "insensitive" } },
+        { nameAr: { contains: query.search, mode: "insensitive" } },
+        { sku: { contains: query.search, mode: "insensitive" } },
+      ];
+    }
+
+    if (query.isActive !== undefined) {
+      where.isActive = query.isActive === "true";
+    }
+
+    if (query.isFeatured !== undefined) {
+      where.isFeatured = query.isFeatured === "true";
+    }
+
+    if (query.isNewArrival !== undefined) {
+      where.isNewArrival = query.isNewArrival === "true";
+    }
+
+    if (query.collectionId) {
+      where.collections = {
+        some: { collectionId: query.collectionId },
+      };
+    }
+
+    const orderBy: Prisma.ProductOrderByWithRelationInput = {};
+    if (query.sortBy) {
+      const order = query.sortOrder === "desc" ? "desc" : "asc";
+      if (query.sortBy === "price") {
+        orderBy.basePrice = order;
+      } else if (query.sortBy === "name") {
+        orderBy.nameEn = order;
+      } else if (query.sortBy === "createdAt") {
+        orderBy.createdAt = order;
+      } else if (query.sortBy === "soldCount") {
+        orderBy.soldCount = order;
+      }
+    } else {
+      orderBy.createdAt = "desc";
+    }
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        include: {
+          images: { where: { isPrimary: true }, take: 1 },
+          variants: {
+            where: { isActive: true },
+            include: {
+              abayaLength: true,
+              bodySize: true,
+              color: true,
+            },
+          },
+          collections: {
+            include: { collection: true },
+          },
+        },
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    return {
+      products,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  static async getById(id: string) {
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { sortOrder: "asc" } },
+        sizeGuideImages: { orderBy: { sortOrder: "asc" } },
+        variants: {
+          where: { isActive: true },
+          include: {
+            abayaLength: true,
+            bodySize: true,
+            color: true,
+          },
+          orderBy: [
+            { abayaLength: { sortOrder: "asc" } },
+            { bodySize: { sortOrder: "asc" } },
+          ],
+        },
+        collections: {
+          include: { collection: true },
+        },
+        reviews: {
+          where: { isApproved: true },
+          include: {
+            user: {
+              select: { firstName: true, lastName: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundError("Product");
+    }
+
+    return product;
+  }
+
+  static async getBySlug(slug: string) {
+    const product = await prisma.product.findUnique({
+      where: { slug },
+      include: {
+        images: { orderBy: { sortOrder: "asc" } },
+        sizeGuideImages: { orderBy: { sortOrder: "asc" } },
+        variants: {
+          where: { isActive: true },
+          include: {
+            abayaLength: true,
+            bodySize: true,
+            color: true,
+          },
+          orderBy: [
+            { abayaLength: { sortOrder: "asc" } },
+            { bodySize: { sortOrder: "asc" } },
+          ],
+        },
+        collections: {
+          include: { collection: true },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundError("Product");
+    }
+
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { viewCount: { increment: 1 } },
+    });
+
+    return product;
+  }
+
+  static async create(input: CreateProductInput) {
+    const { collectionIds, ...productData } = input;
+
+    const product = await prisma.product.create({
+      data: {
+        ...productData,
+        collections: collectionIds
+          ? {
+              create: collectionIds.map((collectionId, index) => ({
+                collectionId,
+                sortOrder: index,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        collections: { include: { collection: true } },
+      },
+    });
+
+    return product;
+  }
+
+  static async update(id: string, input: UpdateProductInput) {
+    const { collectionIds, ...productData } = input;
+
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!existingProduct) {
+      throw new NotFoundError("Product");
+    }
+
+    if (collectionIds !== undefined) {
+      await prisma.productCollection.deleteMany({
+        where: { productId: id },
+      });
+
+      if (collectionIds.length > 0) {
+        await prisma.productCollection.createMany({
+          data: collectionIds.map((collectionId, index) => ({
+            productId: id,
+            collectionId,
+            sortOrder: index,
+          })),
+        });
+      }
+    }
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: productData,
+      include: {
+        images: { orderBy: { sortOrder: "asc" } },
+        variants: { include: { abayaLength: true, bodySize: true, color: true } },
+        collections: { include: { collection: true } },
+      },
+    });
+
+    return product;
+  }
+
+  static async delete(id: string) {
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!existingProduct) {
+      throw new NotFoundError("Product");
+    }
+
+    await prisma.product.delete({ where: { id } });
+  }
+
+  static async createVariant(input: CreateVariantInput) {
+    const product = await prisma.product.findUnique({
+      where: { id: input.productId },
+    });
+
+    if (!product) {
+      throw new NotFoundError("Product");
+    }
+
+    const variant = await prisma.productVariant.create({
+      data: input,
+      include: {
+        abayaLength: true,
+        bodySize: true,
+        color: true,
+      },
+    });
+
+    return variant;
+  }
+
+  static async updateVariant(variantId: string, input: UpdateVariantInput) {
+    const existingVariant = await prisma.productVariant.findUnique({
+      where: { id: variantId },
+    });
+
+    if (!existingVariant) {
+      throw new NotFoundError("Product variant");
+    }
+
+    const variant = await prisma.productVariant.update({
+      where: { id: variantId },
+      data: input,
+      include: {
+        abayaLength: true,
+        bodySize: true,
+        color: true,
+      },
+    });
+
+    return variant;
+  }
+
+  static async deleteVariant(variantId: string) {
+    const existingVariant = await prisma.productVariant.findUnique({
+      where: { id: variantId },
+    });
+
+    if (!existingVariant) {
+      throw new NotFoundError("Product variant");
+    }
+
+    await prisma.productVariant.delete({ where: { id: variantId } });
+  }
+
+  static async updateStock(variantId: string, quantity: number) {
+    return prisma.productVariant.update({
+      where: { id: variantId },
+      data: { stock: quantity },
+    });
+  }
+
+  static async adjustStock(variantId: string, adjustment: number) {
+    return prisma.productVariant.update({
+      where: { id: variantId },
+      data: { stock: { increment: adjustment } },
+    });
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "bun run dist/index.js",
+    "lint": "eslint --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "test": "bun test",
+    "db:generate": "bunx prisma generate",
+    "db:migrate": "bunx prisma migrate dev",
+    "db:push": "bunx prisma db push",
+    "db:studio": "bunx prisma studio",
+    "db:seed:admin": "bun run prisma/seedings/admin.ts"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/swagger": "^1.2.5",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "dotenv": "^17.4.2",
+    "elysia": "^1.2.25",
+    "pg": "^8.20.0",
+    "postgres": "^3.4.9",
+    "prisma": "^7.8.0"
+  },
+  "devDependencies": {
+    "@elysiajs/bearer": "^1.4.4",
+    "@elysiajs/jwt": "^1.4.2",
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/bun": "^1.2.14",
+    "@types/nodemailer": "^8.0.0",
+    "@types/pg": "^8.20.0",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.9.0",
+    "nodemailer": "^8.0.6",
+    "stripe": "^22.1.0",
+    "typescript": "5.9.2"
+  }
+}

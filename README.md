@@ -1,159 +1,262 @@
-# Turborepo starter
+# DesignByShoug
 
-This Turborepo starter is maintained by the Turborepo core team.
+A monorepo built with [Turborepo](https://turborepo.dev/) containing a marketing website, CMS dashboard, and backend API.
 
-## Using this example
+## Tech Stack
 
-Run the following command:
+| App | Technology | Port | Description |
+|-----|------------|------|-------------|
+| **marketing** | Next.js 16 | 3000 | Product showcase website |
+| **cms** | React + Vite | 3002 | Content management dashboard |
+| **server** | Bun + Elysia.js | 3001 | Backend REST API |
 
-```sh
-npx create-turbo@latest
+## Project Structure
+
+```
+designbyshoug/
+├── apps/
+│   ├── marketing/          # Next.js marketing website
+│   │   ├── app/            # App router pages
+│   │   └── public/         # Static assets
+│   │
+│   ├── cms/                # React CMS dashboard (Vite)
+│   │   └── src/            # React components
+│   │
+│   └── server/             # Bun + Elysia.js backend
+│       └── src/
+│           ├── index.ts    # Entry point
+│           └── modules/    # Feature-based modules
+│               ├── health/
+│               │   └── index.ts
+│               └── products/
+│                   ├── index.ts    # Controller
+│                   ├── service.ts  # Business logic
+│                   └── model.ts    # Validation schemas
+│
+├── packages/
+│   ├── eslint-config/      # Shared ESLint configuration
+│   ├── typescript-config/  # Shared TypeScript configuration
+│   └── ui/                 # Shared UI components
+│
+├── turbo.json              # Turborepo configuration
+└── package.json            # Root package.json
 ```
 
-## What's inside?
+## Prerequisites
 
-This Turborepo includes the following packages/apps:
+- [Node.js](https://nodejs.org/) >= 20
+- [Bun](https://bun.sh/) >= 1.1.38 (package manager & server runtime)
 
-### Apps and Packages
+## Getting Started
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### Installation
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+```bash
+# Clone the repository
+git clone <repository-url>
+cd designbyshoug
 
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+# Install dependencies
+bun install
 ```
 
-Without global `turbo`, use your package manager:
+### Development
 
-```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
+Run all apps simultaneously:
+
+```bash
+bun run dev
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Run specific apps:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+```bash
+# Marketing site only
+bun run dev --filter=marketing
 
-```sh
-turbo build --filter=docs
+# CMS only
+bun run dev --filter=cms
+
+# Server only
+bun run dev --filter=server
 ```
 
-Without global `turbo`:
+### Building
 
-```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
+Build all apps:
+
+```bash
+bun run build
 ```
 
-### Develop
+Build specific app:
 
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
+```bash
+bun run build --filter=marketing
 ```
 
-Without global `turbo`, use your package manager:
+### Linting & Type Checking
 
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
+```bash
+# Lint all packages
+bun run lint
+
+# Type check all packages
+bun run check-types
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Apps
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+### Marketing (`apps/marketing`)
 
-```sh
-turbo dev --filter=web
+Next.js 16 application for displaying products and company information.
+
+- **Port:** 3000
+- **Framework:** Next.js with App Router
+- **Styling:** (Add your preferred styling solution)
+
+```bash
+# Development
+bun run dev --filter=marketing
+
+# Build
+bun run build --filter=marketing
+
+# Start production server
+cd apps/marketing && bun run start
 ```
 
-Without global `turbo`:
+### CMS (`apps/cms`)
 
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
+React dashboard for managing content displayed on the marketing site and monitoring website analytics.
+
+- **Port:** 3002
+- **Framework:** React 19 + Vite
+- **Build Tool:** Vite 8
+
+```bash
+# Development
+bun run dev --filter=cms
+
+# Build
+bun run build --filter=cms
+
+# Preview production build
+cd apps/cms && bun run preview
 ```
 
-### Remote Caching
+### Server (`apps/server`)
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+Backend API built with Bun runtime and Elysia.js framework.
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+- **Port:** 3001
+- **Runtime:** Bun
+- **Framework:** Elysia.js
+- **API Docs:** http://localhost:3001/swagger
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+```bash
+# Development (with hot reload)
+bun run dev --filter=server
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+# Build
+bun run build --filter=server
 
-```sh
-cd my-turborepo
-turbo login
+# Start production server
+cd apps/server && bun run start
 ```
 
-Without global `turbo`, use your package manager:
+#### Server Architecture (Elysia.js Best Practices)
 
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
+The server follows a **feature-based folder structure** as recommended by [Elysia.js best practices](https://elysiajs.com/essential/best-practice.html):
+
+```
+src/
+├── index.ts                 # App entry point
+└── modules/
+    └── [feature]/
+        ├── index.ts         # Elysia controller (routes)
+        ├── service.ts       # Business logic (abstract class)
+        └── model.ts         # Validation schemas (Elysia.t)
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+**Key Principles:**
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+- **Controller:** Elysia instance handles HTTP routing and validation
+- **Service:** Abstract class with static methods for business logic
+- **Model:** Elysia's `t` (TypeBox) for request/response validation
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+#### API Endpoints
 
-```sh
-turbo link
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/products` | List all products |
+| GET | `/products/:id` | Get product by ID |
+| POST | `/products` | Create product |
+| PUT | `/products/:id` | Update product |
+| DELETE | `/products/:id` | Delete product |
+
+## Shared Packages
+
+### `@repo/ui`
+
+Shared React component library used by `marketing` and `cms` apps.
+
+### `@repo/eslint-config`
+
+Shared ESLint configuration including:
+- `eslint-config-next` for Next.js apps
+- `eslint-config-prettier` for code formatting
+
+### `@repo/typescript-config`
+
+Shared TypeScript configurations:
+- `base.json` - Base configuration
+- `nextjs.json` - Next.js specific
+- `react-library.json` - React libraries
+
+## Remote Caching
+
+Turborepo supports [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share build artifacts across machines.
+
+```bash
+# Login to Vercel
+bunx turbo login
+
+# Link to Remote Cache
+bunx turbo link
 ```
 
-Without global `turbo`:
+## Environment Variables
 
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
+Create `.env` files in each app directory as needed:
+
+```bash
+# apps/marketing/.env.local
+NEXT_PUBLIC_API_URL=http://localhost:3001
+
+# apps/cms/.env
+VITE_API_URL=http://localhost:3001
+
+# apps/server/.env
+PORT=3001
+DATABASE_URL=your-database-url
 ```
+
+## Scripts Reference
+
+| Script | Description |
+|--------|-------------|
+| `bun run dev` | Start all apps in development mode |
+| `bun run build` | Build all apps |
+| `bun run lint` | Lint all packages |
+| `bun run check-types` | Type check all packages |
+| `bun run format` | Format code with Prettier |
 
 ## Useful Links
 
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- [Turborepo Documentation](https://turborepo.dev/docs)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Elysia.js Documentation](https://elysiajs.com/)
+- [Bun Documentation](https://bun.sh/docs)
+- [Vite Documentation](https://vitejs.dev/)
