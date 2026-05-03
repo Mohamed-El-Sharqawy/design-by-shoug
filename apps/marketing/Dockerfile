@@ -10,7 +10,7 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/package.json
 COPY packages/api-client/package.json ./packages/api-client/package.json
 COPY packages/i18n/package.json ./packages/i18n/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
-RUN bun install --frozen-lockfile
+RUN bun install
 
 FROM base AS builder
 ARG NEXT_PUBLIC_API_URL

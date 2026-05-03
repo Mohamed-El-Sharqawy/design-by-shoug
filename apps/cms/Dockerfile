@@ -8,7 +8,7 @@ COPY packages/types/package.json ./packages/types/package.json
 COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
 COPY packages/api-client/package.json ./packages/api-client/package.json
 COPY packages/i18n/package.json ./packages/i18n/package.json
-RUN bun install --frozen-lockfile
+RUN bun install
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
