@@ -27,4 +27,4 @@ COPY --from=builder /app/apps/server ./apps/server
 WORKDIR /app/apps/server
 ENV NODE_ENV=production
 EXPOSE 3001
-CMD ["bun", "run", "dist/index.js"]
+CMD ["sh", "-c", "bunx prisma db push && bun run dist/index.js"]
