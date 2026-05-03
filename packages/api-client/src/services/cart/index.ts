@@ -9,7 +9,6 @@ import {
   createClearCartMutation,
   createMergeCartMutation,
 } from "./mutations";
-import type { AddToCartDto, UpdateCartItemDto, MergeCartDto } from "./dto";
 import type { CartItemLocal } from "./transformer";
 
 export { type CartItemLocal, transformCartResponse } from "./transformer";

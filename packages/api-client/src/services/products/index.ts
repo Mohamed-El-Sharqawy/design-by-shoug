@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import { useApiClient } from "../../context";
-import type { Product, ProductListResponse, ProductImage, PaginatedResponse } from "@repo/types";
+import type { Product, ProductListResponse, ProductImage } from "@repo/types";
 
 export const productKeys = {
   all: ["products"] as const,

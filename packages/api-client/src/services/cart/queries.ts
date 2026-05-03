@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { ApiClient } from "../../client";
 import { cartKeys } from "./keys";
-import { transformCartResponse, type CartItemLocal } from "./transformer";
+import { transformCartResponse } from "./transformer";
 
 export function cartQueryOptions(client: ApiClient) {
   return queryOptions({

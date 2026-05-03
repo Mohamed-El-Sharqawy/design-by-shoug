@@ -1,5 +1,3 @@
-import type { CartItem } from "@repo/types";
-
 export interface CartItemLocal {
   id: string;
   variantId: string;
