@@ -33,9 +33,30 @@ export const UpdateProfileBody = t.Object({
   phone: t.Optional(t.String()),
 });
 
+export const SendOtpBody = t.Object({
+  email: t.String({ format: "email" }),
+});
+
+export const VerifyEmailBody = t.Object({
+  email: t.String({ format: "email" }),
+  otp: t.String({ minLength: 6, maxLength: 6 }),
+});
+
+export const RequestEmailChangeBody = t.Object({
+  newEmail: t.String({ format: "email" }),
+});
+
+export const VerifyEmailChangeBody = t.Object({
+  otp: t.String({ minLength: 6, maxLength: 6 }),
+});
+
 export type RegisterInput = typeof RegisterBody.static;
 export type LoginInput = typeof LoginBody.static;
 export type ForgotPasswordInput = typeof ForgotPasswordBody.static;
 export type ResetPasswordInput = typeof ResetPasswordBody.static;
 export type ChangePasswordInput = typeof ChangePasswordBody.static;
 export type UpdateProfileInput = typeof UpdateProfileBody.static;
+export type SendOtpInput = typeof SendOtpBody.static;
+export type VerifyEmailInput = typeof VerifyEmailBody.static;
+export type RequestEmailChangeInput = typeof RequestEmailChangeBody.static;
+export type VerifyEmailChangeInput = typeof VerifyEmailChangeBody.static;

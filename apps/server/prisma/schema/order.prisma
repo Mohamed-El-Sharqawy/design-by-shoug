@@ -41,24 +41,28 @@ model Order {
 }
 
 model OrderItem {
-  id              String         @id @default(cuid())
+  id                  String         @id @default(cuid())
   
-  orderId         String
-  order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId             String
+  order               Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
-  variantId       String
-  variant         ProductVariant @relation(fields: [variantId], references: [id])
+  variantId           String
+  variant             ProductVariant @relation(fields: [variantId], references: [id])
   
-  productNameEn   String
-  productNameAr   String
-  variantDetails  String
+  productNameEn       String
+  productNameAr       String
+  variantDetails      String
   
-  quantity        Int
-  unitPrice       Decimal        @db.Decimal(10, 2)
-  totalPrice      Decimal        @db.Decimal(10, 2)
+  quantity            Int
+  unitPrice           Decimal        @db.Decimal(10, 2)
+  totalPrice          Decimal        @db.Decimal(10, 2)
   
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  isCustomSize        Boolean        @default(false)
+  customMeasurements  Json?
+  note                String?
+  
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   @@index([orderId])
   @@map("order_items")

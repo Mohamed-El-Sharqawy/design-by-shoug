@@ -5,6 +5,7 @@ import {
   UpdateCartItemBody,
   ApplyCouponBody,
   CartItemIdParams,
+  MergeCartBody,
 } from "./model";
 import { authPlugin, type AuthUser } from "@/modules/auth";
 
@@ -64,4 +65,16 @@ export const cartRoutes = new Elysia({ prefix: "/cart" })
     const user = ctx.user as AuthUser | null;
     const cart = await CartService.removeCoupon(user?.id, ctx.sessionId);
     return { success: true, data: cart };
-  });
+  })
+  .post(
+    "/merge",
+    async (ctx) => {
+      const user = ctx.user as AuthUser | null;
+      if (!user) {
+        throw new Error("Authentication required for cart merge");
+      }
+      const cart = await CartService.mergeItems(user.id, ctx.body);
+      return { success: true, data: cart };
+    },
+    { body: MergeCartBody }
+  );

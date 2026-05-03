@@ -14,6 +14,7 @@
     "db:migrate": "bunx prisma migrate dev",
     "db:push": "bunx prisma db push",
     "db:studio": "bunx prisma studio",
+    "db:seed": "bunx prisma db seed",
     "db:seed:admin": "bun run prisma/seedings/admin.ts"
   },
   "dependencies": {

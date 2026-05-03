@@ -3,8 +3,10 @@ import { NotFoundError, ValidationError } from "@/lib/errors";
 import { createPaymentIntent, retrievePaymentIntent } from "@/lib/stripe";
 import { sendOrderConfirmationEmail } from "@/lib/mail";
 import { CartService } from "@/modules/cart/service";
+import { CouponService } from "@/modules/coupons/service";
 import type {
   CreateOrderInput,
+  DirectPurchaseInput,
   UpdateOrderStatusInput,
   OrderQueryInput,
 } from "./model";
@@ -17,6 +19,26 @@ function generateOrderNumber(): string {
 }
 
 export abstract class OrderService {
+  private static async resolveCoupon(
+    couponCode: string | undefined,
+    orderAmount: number,
+    userId?: string
+  ) {
+    if (!couponCode) return { couponId: null, couponCode: null, discount: 0, isFreeShipping: false };
+
+    const result = await CouponService.validateCoupon(couponCode, orderAmount, userId);
+    if (!result.valid || !result.coupon) {
+      throw new ValidationError(result.message || "Invalid coupon");
+    }
+
+    return {
+      couponId: result.coupon.id,
+      couponCode: result.coupon.code,
+      discount: result.discount,
+      isFreeShipping: result.coupon.type === "FREE_SHIPPING",
+    };
+  }
+
   static async create(
     input: CreateOrderInput,
     userId?: string,
@@ -54,21 +76,6 @@ export abstract class OrderService {
       throw new ValidationError("Shipping address is required");
     }
 
-    const shippingZone = await prisma.shippingZone.findFirst({
-      where: {
-        isActive: true,
-        cities: { has: input.address?.city || "" },
-      },
-    });
-
-    const shippingCost = shippingZone
-      ? shippingZone.freeShippingMin && cart.subtotal >= Number(shippingZone.freeShippingMin)
-        ? 0
-        : Number(shippingZone.baseCost)
-      : 0;
-
-    const total = cart.total + shippingCost;
-
     for (const item of cart.items) {
       const variant = await prisma.productVariant.findUnique({
         where: { id: item.variantId },
@@ -81,6 +88,29 @@ export abstract class OrderService {
       }
     }
 
+    const couponCode = input.couponCode || cart.coupon?.code;
+    const coupon = await this.resolveCoupon(couponCode, cart.subtotal, userId);
+
+    const shippingZone = await prisma.shippingZone.findFirst({
+      where: {
+        isActive: true,
+        cities: { has: input.address?.city || "" },
+      },
+    });
+
+    let shippingCost = shippingZone
+      ? shippingZone.freeShippingMin && cart.subtotal >= Number(shippingZone.freeShippingMin)
+        ? 0
+        : Number(shippingZone.baseCost)
+      : 0;
+
+    if (coupon.isFreeShipping) {
+      shippingCost = 0;
+    }
+
+    const discount = coupon.discount;
+    const total = cart.subtotal - discount + shippingCost;
+
     const order = await prisma.order.create({
       data: {
         orderNumber: generateOrderNumber(),
@@ -89,10 +119,10 @@ export abstract class OrderService {
         paymentMethod: input.paymentMethod,
         subtotal: cart.subtotal,
         shippingCost,
-        discount: cart.discount,
+        discount,
         total,
-        couponId: cart.coupon?.id,
-        couponCode: cart.coupon?.code,
+        couponId: coupon.couponId,
+        couponCode: coupon.couponCode,
         notesCustomer: input.notesCustomer,
         items: {
           create: cart.items.map((item: any) => ({
@@ -103,6 +133,9 @@ export abstract class OrderService {
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
+            isCustomSize: item.isCustomSize || false,
+            customMeasurements: item.customMeasurements,
+            note: item.note,
           })),
         },
       },
@@ -124,14 +157,12 @@ export abstract class OrderService {
       });
     }
 
-    if (cart.coupon) {
+    if (coupon.couponId) {
       await prisma.coupon.update({
-        where: { id: cart.coupon.id },
+        where: { id: coupon.couponId },
         data: { usageCount: { increment: 1 } },
       });
     }
-
-    await CartService.clearCart(userId, sessionId);
 
     let paymentIntent = null;
     if (input.paymentMethod !== "CASH_ON_DELIVERY") {
@@ -149,16 +180,187 @@ export abstract class OrderService {
     const customerEmail = input.email || (userId ? (await prisma.user.findUnique({ where: { id: userId } }))?.email : null);
 
     if (customerEmail) {
-      await sendOrderConfirmationEmail(customerEmail, order.orderNumber, {
-        items: order.items.map((item) => ({
-          name: item.productNameEn,
-          quantity: item.quantity,
-          price: `AED ${Number(item.totalPrice).toFixed(2)}`,
-        })),
-        subtotal: `AED ${Number(order.subtotal).toFixed(2)}`,
-        shipping: `AED ${Number(order.shippingCost).toFixed(2)}`,
-        total: `AED ${Number(order.total).toFixed(2)}`,
+      try {
+        await sendOrderConfirmationEmail(customerEmail, order.orderNumber, {
+          items: order.items.map((item) => ({
+            name: item.productNameEn,
+            quantity: item.quantity,
+            price: `AED ${Number(item.totalPrice).toFixed(2)}`,
+          })),
+          subtotal: `AED ${Number(order.subtotal).toFixed(2)}`,
+          shipping: `AED ${Number(order.shippingCost).toFixed(2)}`,
+          total: `AED ${Number(order.total).toFixed(2)}`,
+        });
+      } catch (err) {
+        console.error("Failed to send order confirmation email:", err);
+      }
+    }
+
+    return {
+      order,
+      paymentIntent: paymentIntent
+        ? { clientSecret: paymentIntent.client_secret }
+        : null,
+    };
+  }
+
+  /**
+   * Direct purchase: Create an order for a single item without using the cart.
+   * Validates size selection (standard or custom) the same way as cart.
+   */
+  static async directPurchase(input: DirectPurchaseInput, userId?: string) {
+    CartService.validateSizeSelection({
+      variantId: input.variantId,
+      quantity: input.quantity,
+      isCustomSize: input.isCustomSize,
+      customMeasurements: input.customMeasurements,
+    });
+
+    const variant = await prisma.productVariant.findUnique({
+      where: { id: input.variantId },
+      include: {
+        product: true,
+        abayaLength: true,
+        bodySize: true,
+        color: true,
+      },
+    });
+
+    if (!variant) {
+      throw new NotFoundError("Product variant");
+    }
+
+    if (!variant.isActive || !variant.product.isActive) {
+      throw new ValidationError("This product is not available");
+    }
+
+    if (variant.stock < input.quantity) {
+      throw new ValidationError(`Only ${variant.stock} items available in stock`);
+    }
+
+    const basePrice = Number(variant.product.salePrice || variant.product.basePrice);
+    const priceAdjustment = Number(variant.priceAdjustment || 0);
+    const unitPrice = basePrice + priceAdjustment;
+    const subtotal = unitPrice * input.quantity;
+
+    const coupon = await this.resolveCoupon(input.couponCode, subtotal, userId);
+
+    let addressId = input.addressId;
+    if (!addressId && input.address) {
+      const newAddress = await prisma.address.create({
+        data: {
+          ...input.address,
+          userId: userId || "guest",
+        },
       });
+      addressId = newAddress.id;
+    }
+
+    if (!addressId) {
+      throw new ValidationError("Shipping address is required");
+    }
+
+    const shippingZone = await prisma.shippingZone.findFirst({
+      where: {
+        isActive: true,
+        cities: { has: input.address?.city || "" },
+      },
+    });
+
+    let shippingCost = shippingZone
+      ? shippingZone.freeShippingMin && subtotal >= Number(shippingZone.freeShippingMin)
+        ? 0
+        : Number(shippingZone.baseCost)
+      : 0;
+
+    if (coupon.isFreeShipping) {
+      shippingCost = 0;
+    }
+
+    const discount = coupon.discount;
+    const total = subtotal - discount + shippingCost;
+
+    const order = await prisma.order.create({
+      data: {
+        orderNumber: generateOrderNumber(),
+        userId: userId || "guest",
+        addressId,
+        paymentMethod: input.paymentMethod,
+        subtotal,
+        shippingCost,
+        discount,
+        total,
+        couponId: coupon.couponId,
+        couponCode: coupon.couponCode,
+        notesCustomer: input.notesCustomer,
+        items: {
+          create: {
+            variantId: input.variantId,
+            productNameEn: variant.product.nameEn,
+            productNameAr: variant.product.nameAr,
+            variantDetails: `${variant.abayaLength.labelEn} / ${variant.bodySize.labelEn}${variant.color ? ` / ${variant.color.nameEn}` : ""}`,
+            quantity: input.quantity,
+            unitPrice,
+            totalPrice: subtotal,
+            isCustomSize: input.isCustomSize || false,
+            customMeasurements: input.customMeasurements,
+            note: input.note,
+          },
+        },
+      },
+      include: {
+        items: true,
+        address: true,
+      },
+    });
+
+    await prisma.productVariant.update({
+      where: { id: input.variantId },
+      data: { stock: { decrement: input.quantity } },
+    });
+
+    await prisma.product.update({
+      where: { id: variant.product.id },
+      data: { soldCount: { increment: input.quantity } },
+    });
+
+    if (coupon.couponId) {
+      await prisma.coupon.update({
+        where: { id: coupon.couponId },
+        data: { usageCount: { increment: 1 } },
+      });
+    }
+
+    let paymentIntent = null;
+    if (input.paymentMethod !== "CASH_ON_DELIVERY") {
+      paymentIntent = await createPaymentIntent({
+        amount: total,
+        currency: "aed",
+        metadata: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+        },
+        customerEmail: input.email,
+      });
+    }
+
+    const customerEmail = input.email || (userId ? (await prisma.user.findUnique({ where: { id: userId } }))?.email : null);
+
+    if (customerEmail) {
+      try {
+        await sendOrderConfirmationEmail(customerEmail, order.orderNumber, {
+          items: order.items.map((item) => ({
+            name: item.productNameEn,
+            quantity: item.quantity,
+            price: `AED ${Number(item.totalPrice).toFixed(2)}`,
+          })),
+          subtotal: `AED ${Number(order.subtotal).toFixed(2)}`,
+          shipping: `AED ${Number(order.shippingCost).toFixed(2)}`,
+          total: `AED ${Number(order.total).toFixed(2)}`,
+        });
+      } catch (err) {
+        console.error("Failed to send order confirmation email:", err);
+      }
     }
 
     return {

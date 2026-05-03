@@ -78,7 +78,7 @@ export abstract class CouponService {
     await prisma.coupon.delete({ where: { id } });
   }
 
-  static async validateCoupon(code: string, orderAmount: number) {
+  static async validateCoupon(code: string, orderAmount: number, userId?: string) {
     const coupon = await prisma.coupon.findUnique({
       where: { code: code.toUpperCase() },
     });
@@ -101,6 +101,23 @@ export abstract class CouponService {
 
     if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
       return { valid: false, message: "Coupon usage limit reached" };
+    }
+
+    if (coupon.perUserLimit > 0 && !userId) {
+      return { valid: false, message: "Please log in to use this coupon" };
+    }
+
+    if (coupon.perUserLimit > 0 && userId) {
+      const userUsageCount = await prisma.order.count({
+        where: {
+          userId,
+          couponId: coupon.id,
+          status: { notIn: ["CANCELLED"] },
+        },
+      });
+      if (userUsageCount >= coupon.perUserLimit) {
+        return { valid: false, message: "You have already used this coupon" };
+      }
     }
 
     if (coupon.minOrderAmount && orderAmount < Number(coupon.minOrderAmount)) {

@@ -32,49 +32,36 @@ export async function uploadImage(
     transformation?: object;
   }
 ): Promise<UploadResult> {
-  const uploadOptions: Record<string, unknown> = {
+  const uploadOptions = {
     folder: `designbyshoug/${folder}`,
-    resource_type: "image",
+    resource_type: "image" as const,
     ...options,
   };
 
-  const result = await new Promise<UploadResult>((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      uploadOptions,
-      (error, result) => {
-        if (error) reject(error);
-        else if (result) {
-          resolve({
-            publicId: result.public_id,
-            url: result.url,
-            secureUrl: result.secure_url,
-            width: result.width,
-            height: result.height,
-            format: result.format,
-            resourceType: result.resource_type,
-          });
-        }
-      }
-    );
-
-    if (Buffer.isBuffer(file)) {
-      uploadStream.end(file);
-    } else {
-      cloudinary.uploader.upload(file, uploadOptions).then((result) => {
-        resolve({
-          publicId: result.public_id,
-          url: result.url,
-          secureUrl: result.secure_url,
-          width: result.width,
-          height: result.height,
-          format: result.format,
-          resourceType: result.resource_type,
-        });
-      }).catch(reject);
-    }
-  });
-
-  return result;
+  if (Buffer.isBuffer(file)) {
+    const base64 = `data:image/png;base64,${file.toString("base64")}`;
+    const result = await cloudinary.uploader.upload(base64, uploadOptions);
+    return {
+      publicId: result.public_id,
+      url: result.url,
+      secureUrl: result.secure_url,
+      width: result.width,
+      height: result.height,
+      format: result.format,
+      resourceType: result.resource_type,
+    };
+  } else {
+    const result = await cloudinary.uploader.upload(file, uploadOptions);
+    return {
+      publicId: result.public_id,
+      url: result.url,
+      secureUrl: result.secure_url,
+      width: result.width,
+      height: result.height,
+      format: result.format,
+      resourceType: result.resource_type,
+    };
+  }
 }
 
 export async function uploadVideo(

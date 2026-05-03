@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { OrderService } from "./service";
 import {
   CreateOrderBody,
+  DirectPurchaseBody,
   UpdateOrderStatusBody,
   OrderQueryParams,
   OrderIdParams,
@@ -22,6 +23,15 @@ const publicOrderRoutes = new Elysia({ prefix: "/orders" })
       return { success: true, data: result };
     },
     { body: CreateOrderBody }
+  )
+  .post(
+    "/direct",
+    async (ctx) => {
+      const user = ctx.user as AuthUser | null;
+      const result = await OrderService.directPurchase(ctx.body, user?.id);
+      return { success: true, data: result };
+    },
+    { body: DirectPurchaseBody }
   )
   .get(
     "/track/:orderNumber",

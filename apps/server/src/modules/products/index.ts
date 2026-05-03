@@ -7,6 +7,8 @@ import {
   UpdateVariantBody,
   ProductQueryParams,
   ProductIdParams,
+  SetProductImagesBody,
+  BulkCreateVariantsBody,
 } from "./model";
 import { requireAdmin } from "@/modules/auth";
 
@@ -34,6 +36,14 @@ const publicProductRoutes = new Elysia({ prefix: "/products" })
       return { success: true, data: product };
     },
     { params: t.Object({ slug: t.String() }) }
+  )
+  .get(
+    "/variant/:variantId",
+    async ({ params }) => {
+      const variant = await ProductService.getVariantById(params.variantId);
+      return { success: true, data: variant };
+    },
+    { params: t.Object({ variantId: t.String() }) }
   );
 
 const adminProductRoutes = new Elysia({ prefix: "/products" })
@@ -105,6 +115,22 @@ const adminProductRoutes = new Elysia({ prefix: "/products" })
       params: t.Object({ id: t.String(), variantId: t.String() }),
       body: t.Object({ stock: t.Number({ minimum: 0 }) }),
     }
+  )
+  .put(
+    "/:id/images",
+    async ({ params, body }) => {
+      const images = await ProductService.setImages(params.id, body);
+      return { success: true, data: images };
+    },
+    { params: ProductIdParams, body: SetProductImagesBody }
+  )
+  .put(
+    "/:id/variants",
+    async ({ params, body }) => {
+      const variants = await ProductService.bulkCreateVariants(params.id, body);
+      return { success: true, data: variants };
+    },
+    { params: ProductIdParams, body: BulkCreateVariantsBody }
   );
 
 export const productRoutes = new Elysia()

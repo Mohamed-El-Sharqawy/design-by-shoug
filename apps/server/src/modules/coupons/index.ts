@@ -1,21 +1,24 @@
 import { Elysia, t } from "elysia";
 import { CouponService } from "./service";
 import { CreateCouponBody, UpdateCouponBody, CouponIdParams } from "./model";
-import { requireAdmin } from "@/modules/auth";
+import { authPlugin, requireAdmin, type AuthUser } from "@/modules/auth";
 
-const publicCouponRoutes = new Elysia({ prefix: "/coupons" }).post(
-  "/validate",
-  async ({ body }) => {
-    const result = await CouponService.validateCoupon(body.code, body.orderAmount);
-    return { success: true, data: result };
-  },
-  {
-    body: t.Object({
-      code: t.String(),
-      orderAmount: t.Number({ minimum: 0 }),
-    }),
-  }
-);
+const publicCouponRoutes = new Elysia({ prefix: "/coupons" })
+  .use(authPlugin)
+  .post(
+    "/validate",
+    async (ctx) => {
+      const user = ctx.user as AuthUser | null;
+      const result = await CouponService.validateCoupon(ctx.body.code, ctx.body.orderAmount, user?.id);
+      return { success: true, data: result };
+    },
+    {
+      body: t.Object({
+        code: t.String(),
+        orderAmount: t.Number({ minimum: 0 }),
+      }),
+    }
+  );
 
 const adminCouponRoutes = new Elysia({ prefix: "/coupons" })
   .use(requireAdmin)

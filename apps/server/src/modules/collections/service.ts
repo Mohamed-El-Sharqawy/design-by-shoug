@@ -3,14 +3,32 @@ import { NotFoundError } from "@/lib/errors";
 import type { CreateCollectionInput, UpdateCollectionInput } from "./model";
 
 export abstract class CollectionService {
-  static async getAll(includeInactive = false) {
+  static async getAll(includeInactive = false, showAll = false) {
     return prisma.collection.findMany({
-      where: includeInactive ? {} : { isActive: true },
+      where: includeInactive
+        ? {}
+        : {
+            isActive: true,
+            ...(showAll ? {} : { showOnCollectionsPage: true }),
+          },
       orderBy: { sortOrder: "asc" },
       include: {
         _count: {
           select: { products: true },
         },
+      },
+    });
+  }
+
+  static async getHeaderCollections() {
+    return prisma.collection.findMany({
+      where: { isActive: true, showInHeader: true },
+      orderBy: { sortOrder: "asc" },
+      select: {
+        id: true,
+        slug: true,
+        nameEn: true,
+        nameAr: true,
       },
     });
   }

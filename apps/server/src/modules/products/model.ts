@@ -1,5 +1,22 @@
 import { t } from "elysia";
 
+export const ProductImageInput = t.Object({
+  url: t.String({ minLength: 1 }),
+  altTextEn: t.Optional(t.String()),
+  altTextAr: t.Optional(t.String()),
+  isPrimary: t.Optional(t.Boolean()),
+  sortOrder: t.Optional(t.Number()),
+});
+
+export const VariantInput = t.Object({
+  sku: t.String({ minLength: 1 }),
+  abayaLengthId: t.String(),
+  bodySizeId: t.String(),
+  colorId: t.Optional(t.Nullable(t.String())),
+  priceAdjustment: t.Optional(t.Number()),
+  stock: t.Optional(t.Number({ minimum: 0 })),
+});
+
 export const CreateProductBody = t.Object({
   sku: t.String({ minLength: 1 }),
   slug: t.String({ minLength: 1 }),
@@ -21,6 +38,8 @@ export const CreateProductBody = t.Object({
   isActive: t.Optional(t.Boolean()),
   isNewArrival: t.Optional(t.Boolean()),
   collectionIds: t.Optional(t.Array(t.String())),
+  images: t.Optional(t.Array(ProductImageInput)),
+  variants: t.Optional(t.Array(VariantInput)),
 });
 
 export const UpdateProductBody = t.Partial(CreateProductBody);
@@ -30,7 +49,7 @@ export const CreateVariantBody = t.Object({
   productId: t.String(),
   abayaLengthId: t.String(),
   bodySizeId: t.String(),
-  colorId: t.Optional(t.String()),
+  colorId: t.Optional(t.Nullable(t.String())),
   priceAdjustment: t.Optional(t.Number()),
   stock: t.Optional(t.Number({ minimum: 0 })),
   lowStockAlert: t.Optional(t.Number({ minimum: 0 })),
@@ -38,6 +57,20 @@ export const CreateVariantBody = t.Object({
 });
 
 export const UpdateVariantBody = t.Partial(
+  t.Omit(CreateVariantBody, ["productId"])
+);
+
+export const CreateProductImageInput = t.Object({
+  url: t.String({ minLength: 1 }),
+  altTextEn: t.Optional(t.String()),
+  altTextAr: t.Optional(t.String()),
+  isPrimary: t.Optional(t.Boolean()),
+  sortOrder: t.Optional(t.Number()),
+});
+
+export const SetProductImagesBody = t.Array(CreateProductImageInput);
+
+export const BulkCreateVariantsBody = t.Array(
   t.Omit(CreateVariantBody, ["productId"])
 );
 
@@ -51,6 +84,8 @@ export const ProductQueryParams = t.Object({
   isNewArrival: t.Optional(t.String()),
   sortBy: t.Optional(t.String()),
   sortOrder: t.Optional(t.String()),
+  minPrice: t.Optional(t.String()),
+  maxPrice: t.Optional(t.String()),
 });
 
 export const ProductIdParams = t.Object({
@@ -67,3 +102,5 @@ export type UpdateProductInput = typeof UpdateProductBody.static;
 export type CreateVariantInput = typeof CreateVariantBody.static;
 export type UpdateVariantInput = typeof UpdateVariantBody.static;
 export type ProductQueryInput = typeof ProductQueryParams.static;
+export type ProductImageInput = typeof CreateProductImageInput.static;
+export type BulkVariantInput = typeof BulkCreateVariantsBody.static;

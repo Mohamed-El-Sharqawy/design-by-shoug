@@ -1,8 +1,29 @@
 import { prisma } from "@/lib/prisma";
 import { NotFoundError, ValidationError } from "@/lib/errors";
-import type { AddToCartInput, UpdateCartItemInput } from "./model";
+import type { AddToCartInput, UpdateCartItemInput, CustomMeasurements } from "./model";
 
 export abstract class CartService {
+  /**
+   * Validates that size selection is complete:
+   * - If isCustomSize is true, customMeasurements must be provided with all fields
+   * - If isCustomSize is false/undefined, standard variant selection is used (already validated by variantId)
+   */
+  static validateSizeSelection(input: AddToCartInput): void {
+    if (input.isCustomSize) {
+      if (!input.customMeasurements) {
+        throw new ValidationError(
+          "Custom measurements are required when using custom size option"
+        );
+      }
+      const { abayaLength, sleeveLength, bust, waist, hip } = input.customMeasurements;
+      if (!abayaLength || !sleeveLength || !bust || !waist || !hip) {
+        throw new ValidationError(
+          "All custom measurements (Abaya length, Sleeve length, Bust, Waist, Hip) are required"
+        );
+      }
+    }
+  }
+
   static async getOrCreateCart(userId?: string, sessionId?: string) {
     if (!userId && !sessionId) {
       throw new ValidationError("Either userId or sessionId is required");
@@ -65,6 +86,9 @@ export abstract class CartService {
   }
 
   static async addItem(input: AddToCartInput, userId?: string, sessionId?: string) {
+    // Validate size selection (standard or custom)
+    this.validateSizeSelection(input);
+
     const cart = await this.getOrCreateCart(userId, sessionId);
 
     const variant = await prisma.productVariant.findUnique({
@@ -84,7 +108,15 @@ export abstract class CartService {
       throw new ValidationError(`Only ${variant.stock} items available in stock`);
     }
 
-    const existingItem = cart.items.find((item) => item.variantId === input.variantId);
+    // For custom sizes, we create a new cart item even if same variant exists
+    // because custom measurements make it a unique item
+    const isCustomSize = input.isCustomSize || false;
+    const customMeasurements = input.customMeasurements;
+
+    // Find existing item only if NOT custom size
+    const existingItem = !isCustomSize
+      ? cart.items.find((item) => item.variantId === input.variantId && !item.isCustomSize)
+      : null;
 
     if (existingItem) {
       const newQuantity = existingItem.quantity + input.quantity;
@@ -94,7 +126,10 @@ export abstract class CartService {
 
       await prisma.cartItem.update({
         where: { id: existingItem.id },
-        data: { quantity: newQuantity },
+        data: { 
+          quantity: newQuantity,
+          note: input.note || existingItem.note,
+        },
       });
     } else {
       await prisma.cartItem.create({
@@ -102,6 +137,9 @@ export abstract class CartService {
           cartId: cart.id,
           variantId: input.variantId,
           quantity: input.quantity,
+          isCustomSize,
+          customMeasurements,
+          note: input.note,
         },
       });
     }
@@ -122,17 +160,26 @@ export abstract class CartService {
       throw new NotFoundError("Cart item");
     }
 
-    const variant = await prisma.productVariant.findUnique({
-      where: { id: item.variantId },
-    });
+    const updateData: { quantity?: number; note?: string } = {};
 
-    if (variant && variant.stock < input.quantity) {
-      throw new ValidationError(`Only ${variant.stock} items available in stock`);
+    if (input.quantity !== undefined) {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: item.variantId },
+      });
+
+      if (variant && variant.stock < input.quantity) {
+        throw new ValidationError(`Only ${variant.stock} items available in stock`);
+      }
+      updateData.quantity = input.quantity;
+    }
+
+    if (input.note !== undefined) {
+      updateData.note = input.note;
     }
 
     await prisma.cartItem.update({
       where: { id: itemId },
-      data: { quantity: input.quantity },
+      data: updateData,
     });
 
     return this.getCart(userId, sessionId);
@@ -190,6 +237,23 @@ export abstract class CartService {
       throw new ValidationError("This coupon has reached its usage limit");
     }
 
+    if (coupon.perUserLimit > 0 && !userId) {
+      throw new ValidationError("Please log in to use this coupon");
+    }
+
+    if (coupon.perUserLimit > 0 && userId) {
+      const userUsageCount = await prisma.order.count({
+        where: {
+          userId,
+          couponId: coupon.id,
+          status: { notIn: ["CANCELLED"] },
+        },
+      });
+      if (userUsageCount >= coupon.perUserLimit) {
+        throw new ValidationError("You have already used this coupon");
+      }
+    }
+
     await prisma.cart.update({
       where: { id: cart.id },
       data: { couponId: coupon.id },
@@ -243,6 +307,35 @@ export abstract class CartService {
     await prisma.cart.delete({ where: { id: guestCart.id } });
   }
 
+  static async mergeItems(userId: string, items: { variantId: string; quantity: number }[]) {
+    const cart = await this.getOrCreateCart(userId);
+
+    for (const item of items) {
+      const existing = cart.items.find((i) => i.variantId === item.variantId);
+      if (existing) {
+        await prisma.cartItem.update({
+          where: { id: existing.id },
+          data: { quantity: existing.quantity + item.quantity },
+        });
+      } else {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+        });
+        if (variant) {
+          await prisma.cartItem.create({
+            data: {
+              cartId: cart.id,
+              variantId: item.variantId,
+              quantity: item.quantity,
+            },
+          });
+        }
+      }
+    }
+
+    return this.getCart(userId);
+  }
+
   private static calculateCartTotals(cart: any) {
     let subtotal = 0;
     let discount = 0;
@@ -283,6 +376,7 @@ export abstract class CartService {
       subtotal,
       discount,
       total: subtotal - discount,
+      freeShipping: cart.coupon?.type === "FREE_SHIPPING",
     };
   }
 }

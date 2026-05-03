@@ -45,45 +45,49 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
   ({ error, set }) => {
     if (error instanceof AppError) {
       set.status = error.statusCode;
-      return {
+      set.headers["content-type"] = "application/json";
+      return JSON.stringify({
         success: false,
         error: {
           message: error.message,
           code: error.code,
         },
-      };
+      });
     }
 
     if (error instanceof Error) {
       if (error.name === "ValidationError") {
         set.status = 400;
-        return {
+        set.headers["content-type"] = "application/json";
+        return JSON.stringify({
           success: false,
           error: {
             message: error.message,
             code: "VALIDATION_ERROR",
           },
-        };
+        });
       }
 
       console.error("Unhandled error:", error);
       set.status = 500;
-      return {
+      set.headers["content-type"] = "application/json";
+      return JSON.stringify({
         success: false,
         error: {
           message: "Internal server error",
           code: "INTERNAL_ERROR",
         },
-      };
+      });
     }
 
     set.status = 500;
-    return {
+    set.headers["content-type"] = "application/json";
+    return JSON.stringify({
       success: false,
       error: {
         message: "Unknown error",
         code: "UNKNOWN_ERROR",
       },
-    };
+    });
   }
 );

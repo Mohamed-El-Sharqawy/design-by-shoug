@@ -39,6 +39,7 @@ model Product {
   collections     ProductCollection[]
   wishlistItems   WishlistItem[]
   featuredProduct FeaturedProduct?
+  customerReviews CustomerReview[]
 
   @@index([isActive, isFeatured])
   @@index([slug])

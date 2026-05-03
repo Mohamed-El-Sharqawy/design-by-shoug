@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { jwt } from "@elysiajs/jwt";
 import { bearer } from "@elysiajs/bearer";
 import { AuthService } from "./service";
+import { AppError } from "@/lib/errors";
 import {
   RegisterBody,
   LoginBody,
@@ -9,6 +10,10 @@ import {
   ResetPasswordBody,
   ChangePasswordBody,
   UpdateProfileBody,
+  SendOtpBody,
+  VerifyEmailBody,
+  RequestEmailChangeBody,
+  VerifyEmailChangeBody,
 } from "./model";
 import { UnauthorizedError } from "@/lib/errors";
 
@@ -78,6 +83,19 @@ export const requireAdmin = new Elysia({ name: "require-admin" })
 
 const publicAuthRoutes = new Elysia({ prefix: "/auth" })
   .use(jwtPlugin)
+  .onError(({ error, set }) => {
+    if (error instanceof AppError) {
+      set.status = error.statusCode;
+      set.headers["content-type"] = "application/json";
+      return JSON.stringify({ success: false, error: { message: error.message, code: error.code } });
+    }
+    if (error instanceof Error) {
+      console.error("Unhandled auth error:", error);
+      set.status = 500;
+      set.headers["content-type"] = "application/json";
+      return JSON.stringify({ success: false, error: { message: "Internal server error", code: "INTERNAL_ERROR" } });
+    }
+  })
   .post(
     "/register",
     async ({ body, jwt }) => {
@@ -127,10 +145,48 @@ const publicAuthRoutes = new Elysia({ prefix: "/auth" })
       };
     },
     { body: ResetPasswordBody }
+  )
+  .post(
+    "/send-otp",
+    async ({ body }) => {
+      await AuthService.sendOtp(body.email);
+
+      return {
+        success: true,
+        message: "If the email exists and is unverified, a verification code has been sent",
+      };
+    },
+    { body: SendOtpBody }
+  )
+  .post(
+    "/verify-email",
+    async ({ body }) => {
+      const user = await AuthService.verifyEmail(body);
+
+      return {
+        success: true,
+        data: { user },
+        message: "Email verified successfully",
+      };
+    },
+    { body: VerifyEmailBody }
   );
 
 const protectedAuthRoutes = new Elysia({ prefix: "/auth" })
   .use(authPlugin)
+  .onError(({ error, set }) => {
+    if (error instanceof AppError) {
+      set.status = error.statusCode;
+      set.headers["content-type"] = "application/json";
+      return JSON.stringify({ success: false, error: { message: error.message, code: error.code } });
+    }
+    if (error instanceof Error) {
+      console.error("Unhandled auth error:", error);
+      set.status = 500;
+      set.headers["content-type"] = "application/json";
+      return JSON.stringify({ success: false, error: { message: "Internal server error", code: "INTERNAL_ERROR" } });
+    }
+  })
   .onBeforeHandle(({ user }) => {
     if (!user) {
       throw new UnauthorizedError("Authentication required");
@@ -167,6 +223,31 @@ const protectedAuthRoutes = new Elysia({ prefix: "/auth" })
       };
     },
     { body: ChangePasswordBody }
+  )
+  .post(
+    "/request-email-change",
+    async ({ user, body }) => {
+      await AuthService.requestEmailChange((user as AuthUser).id, body);
+
+      return {
+        success: true,
+        message: "Verification code sent to your new email",
+      };
+    },
+    { body: RequestEmailChangeBody }
+  )
+  .post(
+    "/verify-email-change",
+    async ({ user, body }) => {
+      const result = await AuthService.verifyEmailChange((user as AuthUser).id, body);
+
+      return {
+        success: true,
+        data: result,
+        message: "Email changed successfully",
+      };
+    },
+    { body: VerifyEmailChangeBody }
   );
 
 export const authRoutes = new Elysia()

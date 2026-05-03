@@ -8,8 +8,17 @@ import {
 import { requireAdmin } from "@/modules/auth";
 
 const publicCollectionRoutes = new Elysia({ prefix: "/collections" })
-  .get("/", async () => {
-    const collections = await CollectionService.getAll();
+  .get(
+    "/",
+    async ({ query }) => {
+      const showAll = query.showAll === "true";
+      const collections = await CollectionService.getAll(false, showAll);
+      return { success: true, data: collections };
+    },
+    { query: t.Object({ showAll: t.Optional(t.String()) }) }
+  )
+  .get("/header", async () => {
+    const collections = await CollectionService.getHeaderCollections();
     return { success: true, data: collections };
   })
   .get(

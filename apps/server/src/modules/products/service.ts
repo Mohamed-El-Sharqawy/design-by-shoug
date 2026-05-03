@@ -6,6 +6,8 @@ import type {
   CreateVariantInput,
   UpdateVariantInput,
   ProductQueryInput,
+  ProductImageInput,
+  BulkVariantInput,
 } from "./model";
 import type { Prisma } from "@generated/prisma/client";
 
@@ -41,6 +43,13 @@ export abstract class ProductService {
       where.collections = {
         some: { collectionId: query.collectionId },
       };
+    }
+
+    if (query.minPrice) {
+      where.basePrice = { ...((where.basePrice as object) || {}), gte: parseFloat(query.minPrice) };
+    }
+    if (query.maxPrice) {
+      where.basePrice = { ...((where.basePrice as object) || {}), lte: parseFloat(query.maxPrice) };
     }
 
     const orderBy: Prisma.ProductOrderByWithRelationInput = {};
@@ -171,12 +180,58 @@ export abstract class ProductService {
     return product;
   }
 
+  static async getVariantById(variantId: string) {
+    const variant = await prisma.productVariant.findUnique({
+      where: { id: variantId },
+      include: {
+        product: {
+          include: {
+            images: { where: { isPrimary: true }, take: 1 },
+          },
+        },
+        abayaLength: true,
+        bodySize: true,
+        color: true,
+      },
+    });
+
+    if (!variant) {
+      throw new NotFoundError("Product variant");
+    }
+
+    return variant;
+  }
+
   static async create(input: CreateProductInput) {
-    const { collectionIds, ...productData } = input;
+    const { collectionIds, images, variants, ...productData } = input;
 
     const product = await prisma.product.create({
       data: {
         ...productData,
+        images: images
+          ? {
+              create: images.map((img, index) => ({
+                url: img.url,
+                altTextEn: img.altTextEn,
+                altTextAr: img.altTextAr,
+                isPrimary: img.isPrimary ?? false,
+                sortOrder: img.sortOrder ?? index,
+              })),
+            }
+          : undefined,
+        variants: variants
+          ? {
+              create: variants.map((v) => ({
+                sku: v.sku,
+                abayaLengthId: v.abayaLengthId,
+                bodySizeId: v.bodySizeId,
+                colorId: v.colorId,
+                priceAdjustment: v.priceAdjustment ?? 0,
+                stock: v.stock ?? 0,
+                isActive: true,
+              })),
+            }
+          : undefined,
         collections: collectionIds
           ? {
               create: collectionIds.map((collectionId, index) => ({
@@ -187,6 +242,10 @@ export abstract class ProductService {
           : undefined,
       },
       include: {
+        images: { orderBy: { sortOrder: "asc" } },
+        variants: {
+          include: { abayaLength: true, bodySize: true, color: true },
+        },
         collections: { include: { collection: true } },
       },
     });
@@ -195,7 +254,7 @@ export abstract class ProductService {
   }
 
   static async update(id: string, input: UpdateProductInput) {
-    const { collectionIds, ...productData } = input;
+    const { collectionIds, images, variants, ...productData } = input;
 
     const existingProduct = await prisma.product.findUnique({
       where: { id },
@@ -203,6 +262,40 @@ export abstract class ProductService {
 
     if (!existingProduct) {
       throw new NotFoundError("Product");
+    }
+
+    if (images !== undefined) {
+      await prisma.productImage.deleteMany({ where: { productId: id } });
+      if (images.length > 0) {
+        await prisma.productImage.createMany({
+          data: images.map((img, index) => ({
+            productId: id,
+            url: img.url,
+            altTextEn: img.altTextEn,
+            altTextAr: img.altTextAr,
+            isPrimary: img.isPrimary ?? false,
+            sortOrder: img.sortOrder ?? index,
+          })),
+        });
+      }
+    }
+
+    if (variants !== undefined) {
+      await prisma.productVariant.deleteMany({ where: { productId: id } });
+      for (const v of variants) {
+        await prisma.productVariant.create({
+          data: {
+            productId: id,
+            sku: v.sku,
+            abayaLengthId: v.abayaLengthId,
+            bodySizeId: v.bodySizeId,
+            colorId: v.colorId,
+            priceAdjustment: v.priceAdjustment ?? 0,
+            stock: v.stock ?? 0,
+            isActive: true,
+          },
+        });
+      }
     }
 
     if (collectionIds !== undefined) {
@@ -226,7 +319,9 @@ export abstract class ProductService {
       data: productData,
       include: {
         images: { orderBy: { sortOrder: "asc" } },
-        variants: { include: { abayaLength: true, bodySize: true, color: true } },
+        variants: {
+          include: { abayaLength: true, bodySize: true, color: true },
+        },
         collections: { include: { collection: true } },
       },
     });
@@ -313,5 +408,62 @@ export abstract class ProductService {
       where: { id: variantId },
       data: { stock: { increment: adjustment } },
     });
+  }
+
+  static async setImages(productId: string, images: ProductImageInput[]) {
+    const existing = await prisma.product.findUnique({ where: { id: productId } });
+    if (!existing) throw new NotFoundError("Product");
+
+    await prisma.productImage.deleteMany({ where: { productId } });
+
+    if (images.length > 0) {
+      await prisma.productImage.createMany({
+        data: images.map((img, index) => ({
+          productId,
+          url: img.url,
+          altTextEn: img.altTextEn,
+          altTextAr: img.altTextAr,
+          isPrimary: img.isPrimary ?? false,
+          sortOrder: img.sortOrder ?? index,
+        })),
+      });
+    }
+
+    return prisma.productImage.findMany({
+      where: { productId },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  static async bulkCreateVariants(productId: string, variants: BulkVariantInput) {
+    const existing = await prisma.product.findUnique({ where: { id: productId } });
+    if (!existing) throw new NotFoundError("Product");
+
+    await prisma.productVariant.deleteMany({ where: { productId } });
+
+    const created = [];
+    for (const v of variants) {
+      const variant = await prisma.productVariant.create({
+        data: {
+          sku: v.sku,
+          productId,
+          abayaLengthId: v.abayaLengthId,
+          bodySizeId: v.bodySizeId,
+          colorId: v.colorId,
+          priceAdjustment: v.priceAdjustment ?? 0,
+          stock: v.stock ?? 0,
+          lowStockAlert: v.lowStockAlert ?? 5,
+          isActive: v.isActive ?? true,
+        },
+        include: {
+          abayaLength: true,
+          bodySize: true,
+          color: true,
+        },
+      });
+      created.push(variant);
+    }
+
+    return created;
   }
 }

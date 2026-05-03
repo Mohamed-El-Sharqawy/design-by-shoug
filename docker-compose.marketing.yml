@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  marketing:
+    build:
+      context: .
+      dockerfile: apps/marketing/Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+        - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+    container_name: designbyshoug-marketing
+    restart: unless-stopped
+    expose:
+      - "4001"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+      - PORT=4001
+    networks:
+      - coolify-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.marketing.loadbalancer.server.port=4001"
+      - "traefik.http.routers.https-0-${COOLIFY_RESOURCE_UUID}-marketing.service=marketing"
+      - "traefik.http.routers.https-1-${COOLIFY_RESOURCE_UUID}-marketing.service=marketing"
+      - "traefik.http.routers.http-0-${COOLIFY_RESOURCE_UUID}-marketing.service=marketing"
+      - "traefik.http.routers.http-1-${COOLIFY_RESOURCE_UUID}-marketing.service=marketing"
+      - "traefik.docker.network=coolify"
+
+networks:
+  coolify-network:
+    external: true
+    name: ${COOLIFY_DB_NETWORK:-coolify}

@@ -1,20 +1,21 @@
 import { t } from "elysia";
+import { CustomMeasurementsSchema } from "@/modules/cart/model";
+
+const AddressSchema = t.Object({
+  fullName: t.String(),
+  phone: t.String(),
+  country: t.String(),
+  city: t.String(),
+  district: t.Optional(t.String()),
+  street: t.String(),
+  building: t.Optional(t.String()),
+  apartment: t.Optional(t.String()),
+  postalCode: t.Optional(t.String()),
+});
 
 export const CreateOrderBody = t.Object({
   addressId: t.Optional(t.String()),
-  address: t.Optional(
-    t.Object({
-      fullName: t.String(),
-      phone: t.String(),
-      country: t.String(),
-      city: t.String(),
-      district: t.Optional(t.String()),
-      street: t.String(),
-      building: t.Optional(t.String()),
-      apartment: t.Optional(t.String()),
-      postalCode: t.Optional(t.String()),
-    })
-  ),
+  address: t.Optional(AddressSchema),
   paymentMethod: t.Union([
     t.Literal("CASH_ON_DELIVERY"),
     t.Literal("CREDIT_CARD"),
@@ -24,6 +25,28 @@ export const CreateOrderBody = t.Object({
   ]),
   notesCustomer: t.Optional(t.String()),
   email: t.Optional(t.String({ format: "email" })),
+  couponCode: t.Optional(t.String()),
+});
+
+// Direct purchase: buy a single item without adding to cart
+export const DirectPurchaseBody = t.Object({
+  variantId: t.String(),
+  quantity: t.Number({ minimum: 1 }),
+  isCustomSize: t.Optional(t.Boolean()),
+  customMeasurements: t.Optional(CustomMeasurementsSchema),
+  note: t.Optional(t.String()),
+  addressId: t.Optional(t.String()),
+  address: t.Optional(AddressSchema),
+  paymentMethod: t.Union([
+    t.Literal("CASH_ON_DELIVERY"),
+    t.Literal("CREDIT_CARD"),
+    t.Literal("DEBIT_CARD"),
+    t.Literal("APPLE_PAY"),
+    t.Literal("MADA"),
+  ]),
+  notesCustomer: t.Optional(t.String()),
+  email: t.Optional(t.String({ format: "email" })),
+  couponCode: t.Optional(t.String()),
 });
 
 export const UpdateOrderStatusBody = t.Object({
@@ -53,5 +76,6 @@ export const OrderIdParams = t.Object({
 });
 
 export type CreateOrderInput = typeof CreateOrderBody.static;
+export type DirectPurchaseInput = typeof DirectPurchaseBody.static;
 export type UpdateOrderStatusInput = typeof UpdateOrderStatusBody.static;
 export type OrderQueryInput = typeof OrderQueryParams.static;

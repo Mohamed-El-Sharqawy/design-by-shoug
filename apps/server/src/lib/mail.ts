@@ -1,29 +1,40 @@
-import nodemailer from "nodemailer";
-
-const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST || "sandbox.smtp.mailtrap.io",
-  port: Number(process.env.MAIL_PORT) || 587,
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
+const MAILTRAP_API = "https://send.api.mailtrap.io/api/send";
+const MAILTRAP_TOKEN = process.env.MAILTRAP_TOKEN;
+const SENDER_EMAIL = process.env.MAILTRAP_SENDER_EMAIL || "hello@nabdalqalam.com";
+const SENDER_NAME = process.env.MAILTRAP_SENDER_NAME || "Design By Shoug";
+const OWNER_EMAIL = process.env.OWNER_EMAIL;
 
 interface EmailOptions {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  bccOwner?: boolean;
 }
 
 export async function sendEmail(options: EmailOptions): Promise<void> {
-  await transporter.sendMail({
-    from: process.env.MAIL_FROM || "DesignByShoug <noreply@designbyshoug.com>",
-    to: options.to,
+  const body: Record<string, unknown> = {
+    from: { email: SENDER_EMAIL, name: SENDER_NAME },
+    to: [{ email: options.to }],
     subject: options.subject,
     html: options.html,
-    text: options.text,
+    ...(options.text && { text: options.text }),
+    ...(options.bccOwner && OWNER_EMAIL && { bcc: [{ email: OWNER_EMAIL }] }),
+  };
+
+  const res = await fetch(MAILTRAP_API, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${MAILTRAP_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Mailtrap API error ${res.status}: ${text}`);
+  }
 }
 
 export async function sendPasswordResetEmail(
@@ -47,6 +58,39 @@ export async function sendPasswordResetEmail(
       </div>
     `,
     text: `Reset your password by visiting: ${resetUrl}`,
+  });
+}
+
+export async function sendOtpEmail(
+  email: string,
+  otp: string,
+  purpose: "VERIFY_EMAIL" | "CHANGE_EMAIL"
+): Promise<void> {
+  const subject =
+    purpose === "CHANGE_EMAIL"
+      ? "Verify Your New Email - DesignByShoug"
+      : "Verify Your Email - DesignByShoug";
+
+  const message =
+    purpose === "CHANGE_EMAIL"
+      ? "Use this code to confirm your new email address:"
+      : "Use this code to verify your email address:";
+
+  await sendEmail({
+    to: email,
+    subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">Email Verification</h1>
+        <p>${message}</p>
+        <div style="display: inline-block; background-color: #f5f5f5; padding: 16px 32px; margin: 24px 0; border-radius: 8px; letter-spacing: 8px; font-size: 32px; font-weight: bold; color: #1A1A1A;">
+          ${otp}
+        </div>
+        <p style="color: #666; font-size: 14px;">This code will expire in 10 minutes.</p>
+        <p style="color: #666; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+      </div>
+    `,
+    text: `Your verification code is: ${otp}. It expires in 10 minutes.`,
   });
 }
 
@@ -75,6 +119,7 @@ export async function sendOrderConfirmationEmail(
   await sendEmail({
     to: email,
     subject: `Order Confirmation #${orderNumber} - DesignByShoug`,
+    bccOwner: true,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #333;">Thank You for Your Order!</h1>
@@ -105,4 +150,4 @@ export async function sendOrderConfirmationEmail(
   });
 }
 
-export { transporter };
+

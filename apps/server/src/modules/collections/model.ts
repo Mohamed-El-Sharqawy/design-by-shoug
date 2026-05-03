@@ -8,6 +8,8 @@ export const CreateCollectionBody = t.Object({
   descriptionAr: t.Optional(t.String()),
   imageUrl: t.Optional(t.String()),
   isActive: t.Optional(t.Boolean()),
+  showOnCollectionsPage: t.Optional(t.Boolean()),
+  showInHeader: t.Optional(t.Boolean()),
   sortOrder: t.Optional(t.Number()),
 });
 

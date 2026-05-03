@@ -13,6 +13,14 @@ import { orderRoutes } from "@/modules/orders";
 import { contentRoutes } from "@/modules/content";
 import { couponRoutes } from "@/modules/coupons";
 import { shippingRoutes } from "@/modules/shipping";
+import { colorRoutes } from "@/modules/colors";
+import { abayaLengthRoutes } from "@/modules/abaya-lengths";
+import { bodySizeRoutes } from "@/modules/body-sizes";
+import { customerReviewRoutes } from "@/modules/customer-reviews";
+import { uploadRoutes } from "@/modules/upload";
+import { searchRoutes } from "@/modules/search";
+import { wishlistRoutes } from "@/modules/wishlist";
+import { addressRoutes } from "@/modules/addresses";
 
 const app = new Elysia()
   .use(errorHandler)
@@ -41,6 +49,11 @@ const app = new Elysia()
           { name: "Content", description: "CMS content (banners, instagram, videos)" },
           { name: "Coupons", description: "Coupon management" },
           { name: "Shipping", description: "Shipping zones" },
+          { name: "Colors", description: "Color management" },
+          { name: "AbayaLengths", description: "Abaya length management" },
+          { name: "BodySizes", description: "Body size management" },
+          { name: "CustomerReviews", description: "Customer video reviews" },
+          { name: "Search", description: "Search products and collections" },
         ],
       },
     })
@@ -55,6 +68,14 @@ const app = new Elysia()
   .use(contentRoutes)
   .use(couponRoutes)
   .use(shippingRoutes)
+  .use(colorRoutes)
+  .use(abayaLengthRoutes)
+  .use(bodySizeRoutes)
+  .use(customerReviewRoutes)
+  .use(uploadRoutes)
+  .use(searchRoutes)
+  .use(wishlistRoutes)
+  .use(addressRoutes)
   .listen(process.env.PORT || 3001);
 
 console.log(

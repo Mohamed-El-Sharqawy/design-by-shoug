@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: designbyshoug-backend
+    restart: unless-stopped
+    expose:
+      - "3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+    networks:
+      - coolify-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'bun --eval "fetch(''http://localhost:3001/health'').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"',
+        ]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+
+  cms:
+    build:
+      context: .
+      dockerfile: apps/cms/Dockerfile
+    container_name: designbyshoug-cms
+    restart: unless-stopped
+    expose:
+      - "80"
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - coolify-network
+
+networks:
+  coolify-network:
+    external: true
+    name: ${COOLIFY_DB_NETWORK:-coolify}
