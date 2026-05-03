@@ -19,9 +19,11 @@ RUN cd apps/server && bunx prisma generate
 RUN cd apps/server && bun build src/index.ts --outdir dist --target bun
 
 FROM oven/bun:1.2-slim AS runner
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /app/package.json /app/bun.lock ./
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/server ./apps/server
 
 WORKDIR /app/apps/server
