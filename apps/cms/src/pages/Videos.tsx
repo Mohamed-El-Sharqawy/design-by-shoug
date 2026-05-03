@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from '@repo/i18n'
 import { Plus, Pencil, Trash2, Play } from 'lucide-react'
 import { ImageUpload } from '@/components/ui'
+import { useUploadImage } from '@repo/api-client'
 
 interface ShoppableVideo {
   id: string
@@ -17,6 +18,7 @@ export function VideosPage() {
   const { t } = useTranslation()
   const [videos, setVideos] = useState<ShoppableVideo[]>([])
   const [isLoading] = useState(false)
+  const uploadImage = useUploadImage()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingVideo, setEditingVideo] = useState<ShoppableVideo | null>(null)
@@ -193,6 +195,10 @@ export function VideosPage() {
                 <ImageUpload
                   value={formData.thumbnailUrl}
                   onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+                  onUpload={async (file) => {
+                    const result = await uploadImage.mutateAsync({ file, folder: 'videos' })
+                    return result.url
+                  }}
                 />
               </div>
 

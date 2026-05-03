@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from '@repo/i18n'
-import { useCollections, useCreateCollection, useUpdateCollection, useDeleteCollection } from '@repo/api-client'
+import { useCollections, useCreateCollection, useUpdateCollection, useDeleteCollection, useUploadImage } from '@repo/api-client'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui'
 import type { Collection } from '@repo/types'
@@ -8,6 +8,7 @@ import type { Collection } from '@repo/types'
 export function CollectionsPage() {
   const { t } = useTranslation()
   const { data: collections, isLoading } = useCollections(true)
+  const uploadImage = useUploadImage()
   const createCollection = useCreateCollection()
   const updateCollection = useUpdateCollection()
   const deleteCollection = useDeleteCollection()
@@ -242,6 +243,10 @@ export function CollectionsPage() {
                 <ImageUpload
                   value={formData.imageUrl}
                   onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                  onUpload={async (file) => {
+                    const result = await uploadImage.mutateAsync({ file, folder: 'banners' })
+                    return result.url
+                  }}
                 />
               </div>
 
