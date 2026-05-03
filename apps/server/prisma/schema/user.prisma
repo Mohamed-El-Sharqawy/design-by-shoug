@@ -10,7 +10,13 @@ model User {
   avatarUrl     String?
   
   isActive      Boolean   @default(true)
-  
+
+  emailVerified Boolean   @default(false)
+  otpCode       String?
+  otpExpiry     DateTime?
+  otpPurpose    String?
+  otpAttempts   Int       @default(0)
+
   lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
