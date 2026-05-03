@@ -12,8 +12,6 @@ RUN bun install
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/cms/node_modules ./apps/cms/node_modules
-COPY --from=deps /app/packages/*/node_modules ./packages/*/node_modules
 COPY . .
 RUN cd apps/cms && bun run build
 

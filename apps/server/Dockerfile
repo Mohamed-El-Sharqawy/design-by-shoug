@@ -14,8 +14,6 @@ RUN bun install
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
-COPY --from=deps /app/packages/*/node_modules ./packages/*/node_modules
 COPY . .
 RUN cd apps/server && bunx prisma generate
 RUN cd apps/server && bun build src/index.ts --outdir dist --target bun

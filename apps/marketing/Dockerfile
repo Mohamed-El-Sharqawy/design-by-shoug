@@ -18,8 +18,6 @@ ARG NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/marketing/node_modules ./apps/marketing/node_modules
-COPY --from=deps /app/packages/*/node_modules ./packages/*/node_modules
 COPY . .
 RUN cd apps/marketing && bun run build
 
