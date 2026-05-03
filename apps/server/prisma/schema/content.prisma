@@ -1,56 +1,56 @@
 model Banner {
-  id            String   @id @default(cuid())
-  
-  imageUrl      String
-  buttonTextEn  String?
-  buttonTextAr  String?
-  href          String?
-  
-  sortOrder     Int      @default(0)
-  isActive      Boolean  @default(true)
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id String @id @default(cuid())
+
+  imageUrl     String
+  buttonTextEn String?
+  buttonTextAr String?
+  href         String?
+
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isActive, sortOrder])
   @@map("banners")
 }
 
 model InstagramPost {
-  id            String        @id @default(cuid())
-  
-  postUrl       String
-  imageUrl      String
-  thumbnailUrl  String?
-  
-  captionEn     String?
-  captionAr     String?
-  
-  sortOrder     Int           @default(0)
-  status        ContentStatus @default(DRAFT)
-  
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id String @id @default(cuid())
+
+  postUrl      String
+  imageUrl     String
+  thumbnailUrl String?
+
+  captionEn String?
+  captionAr String?
+
+  sortOrder Int           @default(0)
+  status    ContentStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("instagram_posts")
 }
 
 model ShoppableVideo {
-  id            String        @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   titleEn       String?
   titleAr       String?
   descriptionEn String?
   descriptionAr String?
-  
-  videoUrl      String
-  thumbnailUrl  String
-  
-  sortOrder     Int           @default(0)
-  status        ContentStatus @default(DRAFT)
-  
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+
+  videoUrl     String
+  thumbnailUrl String
+
+  sortOrder Int           @default(0)
+  status    ContentStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   linkedProducts ShoppableVideoProduct[]
 
@@ -58,35 +58,35 @@ model ShoppableVideo {
 }
 
 model ShoppableVideoProduct {
-  videoId     String
-  video       ShoppableVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  
-  productId   String
-  
-  timestamp   Decimal?       @db.Decimal(10, 2)
-  sortOrder   Int            @default(0)
+  videoId String
+  video   ShoppableVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  productId String
+
+  timestamp Decimal? @db.Decimal(10, 2)
+  sortOrder Int      @default(0)
 
   @@id([videoId, productId])
   @@map("shoppable_video_products")
 }
 
 model FeaturedProduct {
-  id          String   @id @default(cuid())
-  
-  productId   String   @unique
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  titleEn     String?
-  titleAr     String?
-  
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  
-  startsAt    DateTime?
-  endsAt      DateTime?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id String @id @default(cuid())
+
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  titleEn String?
+  titleAr String?
+
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isActive, sortOrder])
   @@map("featured_products")

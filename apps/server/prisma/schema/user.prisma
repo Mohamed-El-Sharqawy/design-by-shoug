@@ -1,31 +1,31 @@
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  phone         String?   @unique
-  passwordHash  String
-  role          UserRole  @default(CUSTOMER)
-  
-  firstName     String?
-  lastName      String?
-  avatarUrl     String?
-  
-  isActive      Boolean   @default(true)
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String
+  role         UserRole @default(CUSTOMER)
 
-  emailVerified Boolean   @default(false)
-  otpCode       String?
-  otpExpiry     DateTime?
-  otpPurpose    String?
-  otpAttempts   Int       @default(0)
+  firstName String?
+  lastName  String?
+  avatarUrl String?
 
-  lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isActive Boolean @default(true)
 
-  addresses     Address[]
-  orders        Order[]
-  cart          Cart?
-  reviews       Review[]
-  wishlist      WishlistItem[]
+  emailVerified Boolean   @default(false) @map("email_verified")
+  otpCode       String?  @map("otp_code")
+  otpExpiry     DateTime? @map("otp_expiry")
+  otpPurpose    String?  @map("otp_purpose")
+  otpAttempts   Int      @default(0) @map("otp_attempts")
+
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  addresses Address[]
+  orders    Order[]
+  cart      Cart?
+  reviews   Review[]
+  wishlist  WishlistItem[]
 
   @@map("users")
 }

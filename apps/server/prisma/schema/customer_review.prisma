@@ -1,27 +1,27 @@
 model CustomerReview {
-  id            String   @id @default(cuid())
-  
-  videoUrl      String
-  thumbnailUrl  String?
-  
-  name          String
-  type          ReviewerType @default(CUSTOMER)
-  relation      String?
-  
-  productId     String?
-  product       Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
-  
-  feedbackEn    String?
-  feedbackAr    String?
-  
-  rating        Int      @default(5)
-  
-  sortOrder     Int      @default(0)
-  isActive      Boolean  @default(true)
-  
-  reviewDate    DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id String @id @default(cuid())
+
+  videoUrl     String
+  thumbnailUrl String?
+
+  name     String
+  type     ReviewerType @default(CUSTOMER)
+  relation String?
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  feedbackEn String?
+  feedbackAr String?
+
+  rating Int @default(5)
+
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  reviewDate DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([isActive, sortOrder])
   @@map("customer_reviews")

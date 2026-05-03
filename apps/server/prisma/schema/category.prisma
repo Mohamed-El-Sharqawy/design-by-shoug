@@ -1,35 +1,35 @@
 model Collection {
-  id            String    @id @default(cuid())
-  slug          String    @unique
-  
+  id   String @id @default(cuid())
+  slug String @unique
+
   nameEn        String
   nameAr        String
   descriptionEn String?
   descriptionAr String?
-  
-  imageUrl      String?
-  
-  isActive              Boolean   @default(true)
-  showOnCollectionsPage Boolean   @default(true)
-  showInHeader          Boolean   @default(false)
-  sortOrder             Int       @default(0)
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
 
-  products      ProductCollection[]
+  imageUrl String?
+
+  isActive              Boolean @default(true)
+  showOnCollectionsPage Boolean @default(true)
+  showInHeader          Boolean @default(false)
+  sortOrder             Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products ProductCollection[]
 
   @@map("collections")
 }
 
 model ProductCollection {
-  productId    String
-  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   collectionId String
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  
-  sortOrder    Int        @default(0)
+
+  sortOrder Int @default(0)
 
   @@id([productId, collectionId])
   @@map("product_collections")
