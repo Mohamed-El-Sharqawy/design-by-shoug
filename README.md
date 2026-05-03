@@ -6,7 +6,7 @@ A monorepo built with [Turborepo](https://turborepo.dev/) containing a marketing
 
 | App | Technology | Port | Description |
 |-----|------------|------|-------------|
-| **marketing** | Next.js 16 | 4000 | Product showcase website |
+| **marketing** | Next.js 16 | 4001 | Product showcase website |
 | **cms** | React + Vite | 3002 | Content management dashboard |
 | **server** | Bun + Elysia.js | 3001 | Backend REST API |
 
@@ -111,7 +111,7 @@ bun run check-types
 
 Next.js 16 application for displaying products and company information.
 
-- **Port:** 3000
+- **Port:** 4001
 - **Framework:** Next.js with App Router
 - **Styling:** (Add your preferred styling solution)
 
