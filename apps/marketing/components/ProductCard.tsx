@@ -31,7 +31,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <>
       <div className="group block">
         <div className="relative aspect-3/4 overflow-hidden bg-[#FAF9F7] mb-4 rounded-xl">
-          <Link href={`/${locale}/products/${product.slug}`}>
+          <Link href={`/${locale}/products/${product.slug}`} className="block">
             {primaryImage ? (
               <Image
                 src={primaryImage.url}
@@ -56,17 +56,17 @@ export function ProductCard({ product }: ProductCardProps) {
                 <span className="px-3 py-1 bg-[#8B7355] text-white text-[10px] tracking-widest uppercase">{t("sale")}</span>
               )}
             </div>
-
-            <div className="hidden sm:absolute sm:inset-0 sm:bg-black/0 sm:group-hover:bg-black/10 sm:transition-colors sm:duration-300 sm:flex sm:items-center sm:justify-center">
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuickViewOpen(true); }}
-                className="px-6 py-2 bg-white/90 backdrop-blur-sm text-[#1A1A1A] text-xs tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 hover:bg-white cursor-pointer"
-              >
-                {t("quickView")}
-              </button>
-            </div>
           </Link>
+
+          <div className="hidden sm:absolute sm:inset-0 sm:bg-black/0 sm:group-hover:bg-black/10 sm:transition-colors sm:duration-300 sm:flex sm:items-center sm:justify-center sm:z-10">
+            <button
+              type="button"
+              onClick={() => setQuickViewOpen(true)}
+              className="px-6 py-2 bg-white/90 backdrop-blur-sm text-[#1A1A1A] text-xs tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 hover:bg-white cursor-pointer"
+            >
+              {t("quickView")}
+            </button>
+          </div>
 
         </div>
 
