@@ -41,7 +41,8 @@ export async function sendPasswordResetEmail(
   email: string,
   resetToken: string
 ): Promise<void> {
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const frontendUrl = process.env.FRONTEND_URL || "https://designbyshoug.com";
+  const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
   await sendEmail({
     to: email,
