@@ -24,7 +24,7 @@ const uploadRoutes = new Elysia({ prefix: "/upload" })
     },
     {
       body: t.Object({
-        file: t.File(),
+        file: t.File({ maxSize: "15m" }),
         folder: t.Union([
           t.Literal("products"),
           t.Literal("banners"),
