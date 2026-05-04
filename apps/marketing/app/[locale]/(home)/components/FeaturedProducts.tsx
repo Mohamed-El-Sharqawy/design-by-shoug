@@ -49,7 +49,7 @@ export async function FeaturedProducts() {
         {/* View all link */}
         <div className="text-center mt-12">
           <a
-            href={`/${locale}/shop`}
+            href={`/${locale}/collections/all`}
             className="inline-block px-8 py-3 border border-[#1A1A1A] text-[#1A1A1A] text-sm tracking-widest uppercase font-light hover:bg-[#1A1A1A] hover:text-white transition-all duration-300"
           >
             {t("shopAll")}
