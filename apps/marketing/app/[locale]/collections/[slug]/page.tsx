@@ -166,7 +166,7 @@ export default async function CollectionDetailPage({
     const initial = await getFilteredProducts(filters);
 
     return (
-      <section className="py-16 sm:py-20 lg:py-24 bg-white min-h-screen">
+      <section className="py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12 sm:mb-16">
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#1A1A1A] tracking-wide">
