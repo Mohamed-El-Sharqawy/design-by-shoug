@@ -19,6 +19,7 @@ model User {
 
   resetToken       String?   @map("reset_token")
   resetTokenExpiry DateTime? @map("reset_token_expiry")
+  pendingEmail     String?   @map("pending_email")
 
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())

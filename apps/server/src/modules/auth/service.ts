@@ -90,10 +90,6 @@ export abstract class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    const emailVerified = await prisma.$queryRaw<Array<{ email_verified: boolean }>>`
-      SELECT email_verified FROM users WHERE id = ${user.id}
-    `;
-
     return {
       id: user.id,
       email: user.email,
@@ -101,7 +97,7 @@ export abstract class AuthService {
       lastName: user.lastName,
       phone: user.phone,
       role: user.role,
-      emailVerified: emailVerified[0]?.email_verified ?? false,
+      emailVerified: user.emailVerified,
     };
   }
 
@@ -118,26 +114,30 @@ export abstract class AuthService {
     const resetTokenHash = await hashPassword(resetToken);
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
 
-    await prisma.$executeRaw`
-      UPDATE users 
-      SET reset_token = ${resetTokenHash}, reset_token_expiry = ${resetTokenExpiry}
-      WHERE id = ${user.id}
-    `;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken: resetTokenHash,
+        resetTokenExpiry,
+      },
+    });
 
     await sendPasswordResetEmail(email, resetToken);
   }
 
   static async resetPassword(input: ResetPasswordInput) {
-    const users = await prisma.$queryRaw<Array<{ id: string; reset_token: string }>>`
-      SELECT id, reset_token FROM users 
-      WHERE reset_token IS NOT NULL 
-      AND reset_token_expiry > NOW()
-    `;
+    const users = await prisma.user.findMany({
+      where: {
+        resetToken: { not: null },
+        resetTokenExpiry: { gt: new Date() },
+      },
+      select: { id: true, resetToken: true },
+    });
 
     let foundUser: { id: string } | null = null;
 
     for (const user of users) {
-      const isValid = await verifyPassword(input.token, user.reset_token);
+      const isValid = await verifyPassword(input.token, user.resetToken!);
       if (isValid) {
         foundUser = user;
         break;
@@ -150,11 +150,14 @@ export abstract class AuthService {
 
     const passwordHash = await hashPassword(input.password);
 
-    await prisma.$executeRaw`
-      UPDATE users 
-      SET password_hash = ${passwordHash}, reset_token = NULL, reset_token_expiry = NULL
-      WHERE id = ${foundUser.id}
-    `;
+    await prisma.user.update({
+      where: { id: foundUser.id },
+      data: {
+        passwordHash,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
   }
 
   static async changePassword(userId: string, input: ChangePasswordInput) {
@@ -192,6 +195,7 @@ export abstract class AuthService {
         avatarUrl: true,
         role: true,
         createdAt: true,
+        emailVerified: true,
       },
     });
 
@@ -199,11 +203,7 @@ export abstract class AuthService {
       throw new NotFoundError("User");
     }
 
-    const otpRow = await prisma.$queryRaw<Array<{ email_verified: boolean }>>`
-      SELECT email_verified FROM users WHERE id = ${userId}
-    `;
-
-    return { ...user, emailVerified: otpRow[0]?.email_verified ?? false };
+    return user;
   }
 
   static async updateProfile(userId: string, input: UpdateProfileInput) {
@@ -235,79 +235,91 @@ export abstract class AuthService {
         lastName: true,
         role: true,
         isActive: true,
+        emailVerified: true,
       },
     });
 
     if (!user) return null;
 
-    const otpRow = await prisma.$queryRaw<Array<{ email_verified: boolean }>>`
-      SELECT email_verified FROM users WHERE id = ${userId}
-    `;
-
-    return { ...user, emailVerified: otpRow[0]?.email_verified ?? false };
+    return user;
   }
 
   static async sendOtp(email: string) {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return;
-
-    const otpRow = await prisma.$queryRaw<Array<{ email_verified: boolean }>>`
-      SELECT email_verified FROM users WHERE id = ${user.id}
-    `;
-    if (otpRow[0]?.email_verified) return;
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, emailVerified: true },
+    });
+    if (!user || user.emailVerified) return;
 
     const otp = generateOtp();
     const otpHash = await hashPassword(otp);
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    await prisma.$executeRaw`
-      UPDATE users 
-      SET otp_code = ${otpHash}, otp_expiry = ${otpExpiry}, otp_purpose = 'VERIFY_EMAIL', otp_attempts = 0
-      WHERE id = ${user.id}
-    `;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        otpCode: otpHash,
+        otpExpiry,
+        otpPurpose: "VERIFY_EMAIL",
+        otpAttempts: 0,
+      },
+    });
 
     await sendOtpEmail(email, otp, "VERIFY_EMAIL");
   }
 
   static async verifyEmail(input: VerifyEmailInput) {
-    const user = await prisma.user.findUnique({ where: { email: input.email } });
+    const user = await prisma.user.findUnique({
+      where: { email: input.email },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        emailVerified: true,
+        otpCode: true,
+        otpExpiry: true,
+        otpAttempts: true,
+      },
+    });
     if (!user) {
       throw new ValidationError("Invalid or expired code");
     }
 
-    const row = await prisma.$queryRaw<
-      Array<{ otp_code: string; otp_expiry: Date; otp_attempts: number; email_verified: boolean }>
-    >`
-      SELECT otp_code, otp_expiry, otp_attempts, email_verified FROM users WHERE id = ${user.id}
-    `;
-
-    const r = row[0];
-    if (!r || r.email_verified) {
+    if (user.emailVerified) {
       throw new ValidationError("Email is already verified");
     }
 
-    if (!r.otp_code || !r.otp_expiry || r.otp_expiry < new Date()) {
+    if (!user.otpCode || !user.otpExpiry || user.otpExpiry < new Date()) {
       throw new ValidationError("Code has expired. Please request a new one.");
     }
 
-    if (r.otp_attempts >= 5) {
+    if (user.otpAttempts >= 5) {
       throw new ValidationError("Too many attempts. Please request a new code.");
     }
 
-    const isValid = await verifyPassword(input.otp, r.otp_code);
+    const isValid = await verifyPassword(input.otp, user.otpCode);
 
     if (!isValid) {
-      await prisma.$executeRaw`
-        UPDATE users SET otp_attempts = otp_attempts + 1 WHERE id = ${user.id}
-      `;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { otpAttempts: { increment: 1 } },
+      });
       throw new ValidationError("Invalid code");
     }
 
-    await prisma.$executeRaw`
-      UPDATE users 
-      SET email_verified = true, otp_code = NULL, otp_expiry = NULL, otp_purpose = NULL, otp_attempts = 0
-      WHERE id = ${user.id}
-    `;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        otpCode: null,
+        otpExpiry: null,
+        otpPurpose: null,
+        otpAttempts: 0,
+      },
+    });
 
     return { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone, role: user.role, emailVerified: true };
   }
@@ -329,57 +341,71 @@ export abstract class AuthService {
     const otpHash = await hashPassword(otp);
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    await prisma.$executeRaw`
-      UPDATE users 
-      SET otp_code = ${otpHash}, otp_expiry = ${otpExpiry}, otp_purpose = 'CHANGE_EMAIL', 
-          pending_email = ${input.newEmail}, otp_attempts = 0
-      WHERE id = ${userId}
-    `;
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        otpCode: otpHash,
+        otpExpiry,
+        otpPurpose: "CHANGE_EMAIL",
+        pendingEmail: input.newEmail,
+        otpAttempts: 0,
+      },
+    });
 
     await sendOtpEmail(user.email, otp, "CHANGE_EMAIL");
   }
 
   static async verifyEmailChange(userId: string, input: VerifyEmailChangeInput) {
-    const row = await prisma.$queryRaw<
-      Array<{ otp_code: string; otp_expiry: Date; otp_attempts: number; pending_email: string | null; otp_purpose: string | null }>
-    >`
-      SELECT otp_code, otp_expiry, otp_attempts, pending_email, otp_purpose FROM users WHERE id = ${userId}
-    `;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        otpCode: true,
+        otpExpiry: true,
+        otpAttempts: true,
+        otpPurpose: true,
+        pendingEmail: true,
+      },
+    });
 
-    const r = row[0];
-    if (!r || r.otp_purpose !== "CHANGE_EMAIL") {
+    if (!user || user.otpPurpose !== "CHANGE_EMAIL") {
       throw new ValidationError("No pending email change request");
     }
 
-    if (!r.otp_code || !r.otp_expiry || r.otp_expiry < new Date()) {
+    if (!user.otpCode || !user.otpExpiry || user.otpExpiry < new Date()) {
       throw new ValidationError("Code has expired. Please request a new one.");
     }
 
-    if (r.otp_attempts >= 5) {
+    if (user.otpAttempts >= 5) {
       throw new ValidationError("Too many attempts. Please request a new code.");
     }
 
-    if (!r.pending_email) {
+    if (!user.pendingEmail) {
       throw new ValidationError("No pending email found");
     }
 
-    const isValid = await verifyPassword(input.otp, r.otp_code);
+    const isValid = await verifyPassword(input.otp, user.otpCode);
     if (!isValid) {
-      await prisma.$executeRaw`
-        UPDATE users SET otp_attempts = otp_attempts + 1 WHERE id = ${userId}
-      `;
+      await prisma.user.update({
+        where: { id: userId },
+        data: { otpAttempts: { increment: 1 } },
+      });
       throw new ValidationError("Invalid code");
     }
 
-    const newEmail = r.pending_email;
+    const newEmail = user.pendingEmail;
 
-    await prisma.$executeRaw`
-      UPDATE users 
-      SET email = ${newEmail}, email_verified = true, 
-          otp_code = NULL, otp_expiry = NULL, otp_purpose = NULL, pending_email = NULL, otp_attempts = 0
-      WHERE id = ${userId}
-    `;
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: newEmail,
+        emailVerified: true,
+        otpCode: null,
+        otpExpiry: null,
+        otpPurpose: null,
+        pendingEmail: null,
+        otpAttempts: 0,
+      },
+    });
 
     return { email: newEmail };
-  }
-}
+  }}
