@@ -42,12 +42,6 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
         .sort((a, b) => a!.sortOrder - b!.sortOrder),
     [variants]
   );
-  const bodySizes = useMemo(
-    () =>
-      uniqueBy(variants.map((v) => v.bodySize).filter(Boolean), (b) => b!.id)
-        .sort((a, b) => a!.sortOrder - b!.sortOrder),
-    [variants]
-  );
   const colors = useMemo(
     () =>
       uniqueBy(
@@ -62,31 +56,18 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
     [variants]
   );
 
-  const bodySizeHasStock = useCallback(
-    (sizeId: string, lengthId: string | null) =>
-      variants.some(
-        (v) =>
-          v.bodySizeId === sizeId &&
-          (!lengthId || v.abayaLengthId === lengthId) &&
-          v.stock > 0
-      ),
-    [variants]
-  );
-
   const colorHasStock = useCallback(
-    (colorId: string, lengthId: string | null, sizeId: string | null) =>
+    (colorId: string, lengthId: string | null) =>
       variants.some(
         (v) =>
           v.colorId === colorId &&
           (!lengthId || v.abayaLengthId === lengthId) &&
-          (!sizeId || v.bodySizeId === sizeId) &&
           v.stock > 0
       ),
     [variants]
   );
 
   const [selectedLengthId, setSelectedLengthId] = useState<string | null>(null);
-  const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null);
   const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
 
@@ -96,14 +77,10 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
       const firstAvailableLength = lengths.find((l) => lengthHasStock(l!.id));
       const newLengthId = firstAvailableLength?.id || lengths[0]?.id || null;
 
-      const sizesForLength = bodySizes.filter((s) => bodySizeHasStock(s!.id, newLengthId));
-      const newSizeId = sizesForLength[0]?.id || bodySizes[0]?.id || null;
-
-      const colorsForSelection = colors.filter((c) => colorHasStock(c.id, newLengthId, newSizeId));
+      const colorsForSelection = colors.filter((c) => colorHasStock(c.id, newLengthId));
       const newColorId = colorsForSelection[0]?.id || colors[0]?.id || null;
 
       setSelectedLengthId(newLengthId);
-      setSelectedSizeId(newSizeId);
       setSelectedColorId(newColorId);
       setAdded(false);
     } else {
@@ -112,38 +89,26 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [open, lengths, bodySizes, colors, lengthHasStock, bodySizeHasStock, colorHasStock]);
+  }, [open, lengths, colors, lengthHasStock, colorHasStock]);
 
   const handleSelectLength = (id: string) => {
     if (!lengthHasStock(id)) return;
     setSelectedLengthId(id);
-    const sizesForLength = bodySizes.filter((s) => bodySizeHasStock(s!.id, id));
-    setSelectedSizeId(sizesForLength[0]?.id || null);
     const colorsForSelection = colors.filter((c) =>
-      colorHasStock(c.id, id, sizesForLength[0]?.id || null)
-    );
-    setSelectedColorId(colorsForSelection[0]?.id || null);
-  };
-
-  const handleSelectSize = (id: string) => {
-    if (!bodySizeHasStock(id, selectedLengthId)) return;
-    setSelectedSizeId(id);
-    const colorsForSelection = colors.filter((c) =>
-      colorHasStock(c.id, selectedLengthId, id)
+      colorHasStock(c.id, id)
     );
     setSelectedColorId(colorsForSelection[0]?.id || null);
   };
 
   const handleSelectColor = (id: string) => {
-    if (!colorHasStock(id, selectedLengthId, selectedSizeId)) return;
+    if (!colorHasStock(id, selectedLengthId)) return;
     setSelectedColorId(id);
   };
 
   const selectedVariant: ProductVariant | undefined = variants.find((v) => {
     const lengthMatch = !selectedLengthId || v.abayaLengthId === selectedLengthId;
-    const sizeMatch = !selectedSizeId || v.bodySizeId === selectedSizeId;
     const colorMatch = !colors.length || v.colorId === selectedColorId;
-    return lengthMatch && sizeMatch && colorMatch;
+    return lengthMatch && colorMatch;
   });
 
   const isOutOfStock = selectedVariant ? selectedVariant.stock <= 0 : false;
@@ -174,8 +139,6 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
         priceAdjustment: selectedVariant.priceAdjustment,
         abayaLengthLabelEn: selectedVariant.abayaLength?.labelEn || "",
         abayaLengthLabelAr: selectedVariant.abayaLength?.labelAr || "",
-        bodySizeLabelEn: selectedVariant.bodySize?.labelEn || "",
-        bodySizeLabelAr: selectedVariant.bodySize?.labelAr || "",
         colorNameEn: selectedVariant.color?.nameEn || "",
         colorNameAr: selectedVariant.color?.nameAr || "",
         colorHex: selectedVariant.color?.hexCode || null,
@@ -287,42 +250,12 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
                 </div>
               )}
 
-              {bodySizes.length > 0 && (
-                <div className="mb-5">
-                  <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2.5">{t("bodySize")}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {bodySizes.map((size) => {
-                      const disabled = !bodySizeHasStock(size!.id, selectedLengthId);
-                      return (
-                        <button
-                          key={size!.id}
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => handleSelectSize(size!.id)}
-                          className={`min-w-12 px-3 py-2 text-xs tracking-wide border transition-all duration-200 ${
-                            selectedSizeId === size!.id
-                              ? disabled
-                                ? "border-[#C4C4C4] bg-[#C4C4C4] text-white cursor-not-allowed"
-                                : "border-[#1A1A1A] bg-[#1A1A1A] text-white"
-                              : disabled
-                                ? "border-[#E8E4DF] text-[#C4C4C4] cursor-not-allowed line-through"
-                                : "border-[#E8E4DF] text-[#1A1A1A] hover:border-[#1A1A1A]"
-                          }`}
-                        >
-                          {isRtl ? size!.labelAr : size!.labelEn}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
               {colors.length > 0 && (
                 <div className="mb-5">
                   <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2.5">{t("color")}</p>
                   <div className="flex flex-wrap gap-2.5">
                     {colors.map((color) => {
-                      const disabled = !colorHasStock(color.id, selectedLengthId, selectedSizeId);
+                      const disabled = !colorHasStock(color.id, selectedLengthId);
                       return (
                         <button
                           key={color.id}

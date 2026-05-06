@@ -7,7 +7,6 @@ import {
   useUpdateProduct,
   useColors,
   useAbayaLengths,
-  useBodySizes,
   useCollections,
   useUploadImage,
 } from '@repo/api-client'
@@ -18,7 +17,6 @@ import type { Color } from '@repo/types'
 interface VariantRow {
   id: string
   abayaLengthId: string
-  bodySizeId: string
   colorId: string
   sku: string
   priceAdjustment: number
@@ -36,7 +34,6 @@ export function ProductFormPage() {
   const { data: product, isLoading } = useProduct(id || '')
   const { data: colorsData } = useColors(true)
   const { data: lengthsData } = useAbayaLengths(true)
-  const { data: sizesData } = useBodySizes(true)
   const { data: collectionsData } = useCollections(true)
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
@@ -44,7 +41,6 @@ export function ProductFormPage() {
 
   const colors = colorsData || []
   const lengths = lengthsData || []
-  const sizes = sizesData || []
   const allCollections = collectionsData || []
 
   const [step, setStep] = useState<Step>('details')
@@ -76,7 +72,6 @@ export function ProductFormPage() {
 
   const [images, setImages] = useState<{ url: string; altTextEn: string; altTextAr: string; isPrimary: boolean }[]>([])
   const [selectedLengths, setSelectedLengths] = useState<string[]>([])
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [selectedColors, setSelectedColors] = useState<string[]>([])
   const [variants, setVariants] = useState<VariantRow[]>([])
 
@@ -116,14 +111,12 @@ export function ProductFormPage() {
       setVariants(product.variants.map((v) => ({
         id: v.id,
         abayaLengthId: v.abayaLengthId,
-        bodySizeId: v.bodySizeId,
         colorId: v.colorId || '',
         sku: v.sku,
         priceAdjustment: Number(v.priceAdjustment ?? 0),
         stock: Number(v.stock ?? 0),
       })))
       setSelectedLengths([...new Set(product.variants.map((v) => v.abayaLengthId))])
-      setSelectedSizes([...new Set(product.variants.map((v) => v.bodySizeId))])
       const colorIds = product.variants
         .map((v) => v.colorId)
         .filter((cid): cid is string => !!cid)
@@ -142,39 +135,31 @@ export function ProductFormPage() {
     const activeLengths = selectedLengths.length > 0
       ? selectedLengths
       : [...new Set(existingVariants.map((v) => v.abayaLengthId))]
-    const activeSizes = selectedSizes.length > 0
-      ? selectedSizes
-      : [...new Set(existingVariants.map((v) => v.bodySizeId))]
 
-    if (activeLengths.length === 0 || activeSizes.length === 0) return existingVariants
+    if (activeLengths.length === 0) return existingVariants
 
     const useColors = form.hasColorOptions && selectedColors.length > 0
     const selectedLengthItems = lengths.filter((l) => activeLengths.includes(l.id))
-    const selectedSizeItems = sizes.filter((s) => activeSizes.includes(s.id))
     const colorOptions: (Color | null)[] = useColors
       ? colors.filter((c) => selectedColors.includes(c.id))
       : [null]
 
     for (const length of selectedLengthItems) {
-      for (const size of selectedSizeItems) {
-        for (const color of colorOptions) {
-          const existing = existingVariants.find(
-            (v) =>
-              v.abayaLengthId === length.id &&
-              v.bodySizeId === size.id &&
-              (color ? v.colorId === color.id : !v.colorId)
-          )
+      for (const color of colorOptions) {
+        const existing = existingVariants.find(
+          (v) =>
+            v.abayaLengthId === length.id &&
+            (color ? v.colorId === color.id : !v.colorId)
+        )
 
-          result.push({
-            id: existing?.id || `${length.id}-${size.id}-${color?.id || 'nocolor'}`,
-            abayaLengthId: length.id,
-            bodySizeId: size.id,
-            colorId: color?.id || '',
-            sku: existing?.sku || `${form.sku}-${length.inches}${size.code}${color ? `-${color.code}` : ''}`,
-            priceAdjustment: existing?.priceAdjustment || 0,
-            stock: existing?.stock || 0,
-          })
-        }
+        result.push({
+          id: existing?.id || `${length.id}-${color?.id || 'nocolor'}`,
+          abayaLengthId: length.id,
+          colorId: color?.id || '',
+          sku: existing?.sku || `${form.sku}-${length.inches}${color ? `-${color.code}` : ''}`,
+          priceAdjustment: existing?.priceAdjustment || 0,
+          stock: existing?.stock || 0,
+        })
       }
     }
 
@@ -267,7 +252,6 @@ export function ProductFormPage() {
         variants: currentVariants.map((v) => ({
           sku: v.sku,
           abayaLengthId: v.abayaLengthId,
-          bodySizeId: v.bodySizeId,
           colorId: v.colorId || null,
           priceAdjustment: Number(v.priceAdjustment),
           stock: Number(v.stock),
@@ -545,17 +529,6 @@ export function ProductFormPage() {
               </div>
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">{t('products.bodySize')}</h3>
-              <div className="flex flex-wrap gap-2">
-                {sizes.map((size) => (
-                  <button key={size.id} onClick={() => toggleSelection(size.id, selectedSizes, setSelectedSizes)} className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${selectedSizes.includes(size.id) ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'}`}>
-                    {size.code} <span className="text-xs opacity-70">({size.labelEn})</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {form.hasColorOptions && (
               <div className="mb-6">
                 <h3 className="text-sm font-semibold text-slate-700 mb-3">{t('products.colors')}</h3>
@@ -570,11 +543,11 @@ export function ProductFormPage() {
               </div>
             )}
 
-            <button onClick={generateVariants} disabled={selectedLengths.length === 0 || selectedSizes.length === 0} className="bg-slate-900 text-white px-6 py-2 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              {t('products.generateVariants')} ({selectedLengths.length} x {selectedSizes.length}
+            <button onClick={generateVariants} disabled={selectedLengths.length === 0} className="bg-slate-900 text-white px-6 py-2 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {t('products.generateVariants')} ({selectedLengths.length}
               {form.hasColorOptions && selectedColors.length > 0 && ` x ${selectedColors.length}`}
               {' = '}
-              {selectedLengths.length * selectedSizes.length * (form.hasColorOptions && selectedColors.length > 0 ? selectedColors.length : 1)} {t('products.combinations')})
+              {selectedLengths.length * (form.hasColorOptions && selectedColors.length > 0 ? selectedColors.length : 1)} {t('products.combinations')})
             </button>
           </div>
 
@@ -589,7 +562,6 @@ export function ProductFormPage() {
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
                       <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">{t('products.length')}</th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">{t('products.size')}</th>
                       {form.hasColorOptions && <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">{t('products.color')}</th>}
                       <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">SKU</th>
                       <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">{t('products.priceAdjustment')}</th>
@@ -600,12 +572,10 @@ export function ProductFormPage() {
                   <tbody className="divide-y divide-slate-200">
                     {variants.map((variant) => {
                       const vlength = lengths.find((l) => l.id === variant.abayaLengthId)
-                      const vsize = sizes.find((s) => s.id === variant.bodySizeId)
                       const vcolor = variant.colorId ? colors.find((c) => c.id === variant.colorId) : null
                       return (
                         <tr key={variant.id} className="hover:bg-slate-50">
                           <td className="px-4 py-3 text-slate-700">{vlength?.labelEn}</td>
-                          <td className="px-4 py-3 text-slate-700">{vsize?.code}</td>
                           {form.hasColorOptions && (
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">

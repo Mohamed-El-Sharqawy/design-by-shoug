@@ -59,7 +59,6 @@ export interface ProductImageDto {
 export interface VariantDto {
   sku: string;
   abayaLengthId: string;
-  bodySizeId: string;
   colorId?: string;
   priceAdjustment?: number;
   stock?: number;
@@ -210,7 +209,6 @@ export interface ProductVariantDetail {
   priceAdjustment: number;
   stock: number;
   abayaLength?: { id: string; labelEn: string; labelAr: string };
-  bodySize?: { id: string; labelEn: string; labelAr: string };
   color?: { id: string; nameEn: string; nameAr: string; hex: string };
   product: Product;
 }

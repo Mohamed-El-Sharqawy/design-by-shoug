@@ -136,7 +136,6 @@
     "item": "item",
     "items": "items",
     "length": "Length",
-    "bodySize": "Body Size",
     "color": "Color",
     "freeShipping": "Free Shipping",
     "viewCart": "View Cart",
@@ -150,7 +149,6 @@
     "quickView": "Quick View",
     "noImage": "No Image",
     "length": "Length",
-    "bodySize": "Body Size",
     "color": "Color",
     "addToCart": "Add to Cart",
     "buyNow": "Buy Now",
@@ -500,7 +498,6 @@
     "settings": "Settings",
     "logout": "Logout",
     "abayaLengths": "Abaya Lengths",
-    "bodySizes": "Body Sizes",
     "customerReviews": "Customer Reviews"
   },
   "auth": {
@@ -583,7 +580,6 @@
     "buildVariants": "Build Variants",
     "buildVariantsDesc": "Select the lengths and sizes this product comes in. We'll auto-generate all variant combinations.",
     "abayaLength": "Abaya Length",
-    "bodySize": "Body Size",
     "colors": "Colors",
     "generateVariants": "Generate Variants",
     "combinations": "combinations",
@@ -745,18 +741,6 @@
     "idealHeightFt": "Ideal Height (ft)",
     "sortOrder": "Sort Order"
   },
-  "bodySizes": {
-    "title": "Body Sizes",
-    "addSize": "Add Size",
-    "editSize": "Edit Size",
-    "code": "Code",
-    "labelEn": "Label (English)",
-    "labelAr": "Label (Arabic)",
-    "bustInches": "Bust (in)",
-    "hipInches": "Hip (in)",
-    "sleevesInches": "Sleeves (in)",
-    "sortOrder": "Sort Order"
-  },
   "customerReviews": {
     "title": "Customer Reviews",
     "addReview": "Add Review",
@@ -810,8 +794,6 @@
     "shoulderDesc": "Measure from the edge of one shoulder across your back to the edge of the other shoulder.",
     "sleeveTitle": "Sleeve Length",
     "sleeveDesc": "Measure from the shoulder seam down the outside of your arm to your wrist.",
-    "bodySizeChart": "Body Size Chart",
-    "bodySizeNote": "Measurements are in centimeters (cm). If you fall between sizes, we recommend sizing up for a more comfortable fit.",
     "size": "Size",
     "bust": "Bust",
     "waist": "Waist",
@@ -831,7 +813,7 @@
     "tall": "Tall",
     "extraTall": "Extra Tall",
     "whereToSpecify": "Where to Specify Your Measurements",
-    "whereToSpecifyDesc": "When adding an abaya to your cart, you'll see options to select your body size and preferred abaya length. For custom measurements, choose \"Custom\" and enter your exact measurements. Our tailors will craft your abaya to your specifications.",
+    "whereToSpecifyDesc": "When adding an abaya to your cart, you'll see options to select your preferred abaya length. For custom measurements, choose \"Custom\" and enter your exact measurements. Our tailors will craft your abaya to your specifications.",
     "customOption": "Custom Measurements",
     "customDesc": "Need a truly personalized fit? Select the custom option at checkout and provide your exact bust, waist, hips, shoulder width, sleeve length, and desired abaya length. Our master tailors will create a piece made just for you.",
     "videoTitle": "Watch: How to Measure Yourself",

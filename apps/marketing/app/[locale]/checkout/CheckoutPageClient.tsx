@@ -106,7 +106,6 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
     const primaryImage = v.product.images?.find((img) => img.isPrimary) || v.product.images?.[0];
     const parts = [
       v.abayaLength?.labelEn,
-      v.bodySize?.labelEn,
       v.color ? v.color.nameEn : null,
     ].filter(Boolean).join(" / ");
     return {

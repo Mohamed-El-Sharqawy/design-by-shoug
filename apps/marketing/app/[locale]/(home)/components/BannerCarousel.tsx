@@ -126,7 +126,7 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
 
   return (
     <section
-      className="relative w-full h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[85vh] overflow-hidden bg-[#FAF9F7] select-none touch-pan-y"
+      className="relative w-full h-[calc(100dvh-88px)] overflow-hidden bg-[#FAF9F7] select-none touch-pan-y"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -146,12 +146,22 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
           draggable={false}
         >
           <Image
+            src={banner.imageMobileUrl || banner.imageUrl}
+            alt={getButtonText(banner) || `Banner ${index + 1}`}
+            fill
+            priority={index < 2}
+            loading={index < 2 ? "eager" : "lazy"}
+            className="object-cover object-center select-none pointer-events-none xl:hidden"
+            sizes="100vw"
+            draggable={false}
+          />
+          <Image
             src={banner.imageUrl}
             alt={getButtonText(banner) || `Banner ${index + 1}`}
             fill
-            priority={true}
-            loading="eager"
-            className="object-cover object-center select-none pointer-events-none"
+            priority={index < 2}
+            loading={index < 2 ? "eager" : "lazy"}
+            className="object-cover object-center select-none pointer-events-none hidden xl:block"
             sizes="100vw"
             draggable={false}
           />

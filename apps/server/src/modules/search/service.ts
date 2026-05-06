@@ -30,7 +30,6 @@ export class SearchService {
             where: { isActive: true },
             include: {
               abayaLength: true,
-              bodySize: true,
               color: true,
             },
           },

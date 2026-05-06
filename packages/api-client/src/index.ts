@@ -12,7 +12,6 @@ export * from "./services/coupons";
 export * from "./services/shipping";
 export * from "./services/colors";
 export * from "./services/abaya-lengths";
-export * from "./services/body-sizes";
 export * from "./services/customer-reviews";
 export * from "./services/upload";
 export * from "./services/cart";

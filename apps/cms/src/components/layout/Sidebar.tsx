@@ -12,10 +12,9 @@ import {
   Ticket,
   Truck,
   Palette,
-  Settings,
+  // Settings,
   LogOut,
   Ruler,
-  Scan,
   MessageSquare,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth'
@@ -33,7 +32,6 @@ const navItems = [
   { path: '/shipping', icon: Truck, label: 'nav.shipping' },
   { path: '/colors', icon: Palette, label: 'nav.colors' },
   { path: '/abaya-lengths', icon: Ruler, label: 'nav.abayaLengths' },
-  { path: '/body-sizes', icon: Scan, label: 'nav.bodySizes' },
   { path: '/customer-reviews', icon: MessageSquare, label: 'nav.customerReviews' },
 ]
 
@@ -55,10 +53,9 @@ export function Sidebar() {
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-slate-700 text-white'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                    ? 'bg-slate-700 text-white'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`
                 }
               >
@@ -71,13 +68,13 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-slate-700">
-        <NavLink
+        {/* <NavLink
           to="/settings"
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
         >
           <Settings className="w-5 h-5" />
           <span>{t('nav.settings')}</span>
-        </NavLink>
+        </NavLink> */}
         <button
           onClick={logout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-red-600 hover:text-white transition-colors"

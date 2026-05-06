@@ -162,7 +162,7 @@ function CartItemRow({
   const lineTotal = unitPrice * item.quantity;
 
   const lengthLabel = isRtl ? item.abayaLengthLabelAr : item.abayaLengthLabelEn;
-  const sizeLabel = isRtl ? item.bodySizeLabelAr : item.bodySizeLabelEn;
+
   const colorLabel = isRtl ? item.colorNameAr : item.colorNameEn;
 
   return (
@@ -210,9 +210,7 @@ function CartItemRow({
           {lengthLabel && (
             <span>{t("length")}: {lengthLabel}</span>
           )}
-          {sizeLabel && (
-            <span>{t("bodySize")}: {sizeLabel}</span>
-          )}
+
           {colorLabel && (
             <span className="flex items-center gap-1">
               {t("color")}:

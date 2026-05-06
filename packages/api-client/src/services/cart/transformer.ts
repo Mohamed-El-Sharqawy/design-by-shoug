@@ -11,8 +11,6 @@ export interface CartItemLocal {
   priceAdjustment: number;
   abayaLengthLabelEn: string;
   abayaLengthLabelAr: string;
-  bodySizeLabelEn: string;
-  bodySizeLabelAr: string;
   colorNameEn: string;
   colorNameAr: string;
   colorHex: string | null;
@@ -29,7 +27,6 @@ interface CartItemServer {
     sku: string;
     priceAdjustment: number;
     abayaLength: { labelEn: string; labelAr: string } | null;
-    bodySize: { labelEn: string; labelAr: string } | null;
     color: { nameEn: string; nameAr: string; hexCode: string | null } | null;
     product: {
       id: string;
@@ -62,8 +59,6 @@ export function transformCartItem(item: CartItemServer): CartItemLocal {
     priceAdjustment: Number(item.variant.priceAdjustment),
     abayaLengthLabelEn: item.variant.abayaLength?.labelEn || "",
     abayaLengthLabelAr: item.variant.abayaLength?.labelAr || "",
-    bodySizeLabelEn: item.variant.bodySize?.labelEn || "",
-    bodySizeLabelAr: item.variant.bodySize?.labelAr || "",
     colorNameEn: item.variant.color?.nameEn || "",
     colorNameAr: item.variant.color?.nameAr || "",
     colorHex: item.variant.color?.hexCode || null,

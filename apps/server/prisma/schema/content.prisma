@@ -1,8 +1,9 @@
 model Banner {
   id String @id @default(cuid())
 
-  imageUrl     String
-  buttonTextEn String?
+  imageUrl       String
+  imageMobileUrl String?
+  buttonTextEn   String?
   buttonTextAr String?
   href         String?
 

@@ -30,7 +30,6 @@ async function cleanDatabase() {
   await prisma.product.deleteMany();
   await prisma.collection.deleteMany();
   await prisma.abayaLength.deleteMany();
-  await prisma.bodySize.deleteMany();
   await prisma.color.deleteMany();
   await prisma.coupon.deleteMany();
   await prisma.shippingZone.deleteMany();
@@ -62,27 +61,6 @@ async function seedAbayaLengths() {
 
   console.log(`  ✅ Created ${lengths.length} abaya lengths\n`);
   return await prisma.abayaLength.findMany({ orderBy: { sortOrder: "asc" } });
-}
-
-async function seedBodySizes() {
-  console.log("📐 Seeding body sizes...");
-
-  const sizes = [
-    { code: "XS", labelEn: "Extra Small", labelAr: "إكس سموول", bustInches: 32.0, hipInches: 34.0, sleevesInches: 22.0, sortOrder: 1 },
-    { code: "S", labelEn: "Small", labelAr: "سموول", bustInches: 34.0, hipInches: 36.0, sleevesInches: 22.5, sortOrder: 2 },
-    { code: "M", labelEn: "Medium", labelAr: "ميديوم", bustInches: 36.0, hipInches: 38.0, sleevesInches: 23.0, sortOrder: 3 },
-    { code: "L", labelEn: "Large", labelAr: "لارج", bustInches: 38.0, hipInches: 40.0, sleevesInches: 23.5, sortOrder: 4 },
-    { code: "XL", labelEn: "Extra Large", labelAr: "إكس لارج", bustInches: 40.0, hipInches: 42.0, sleevesInches: 24.0, sortOrder: 5 },
-    { code: "XXL", labelEn: "Double Extra Large", labelAr: "دبل إكس لارج", bustInches: 42.0, hipInches: 44.0, sleevesInches: 24.5, sortOrder: 6 },
-    { code: "XXXL", labelEn: "Triple Extra Large", labelAr: "تربل إكس لارج", bustInches: 44.0, hipInches: 46.0, sleevesInches: 25.0, sortOrder: 7 },
-  ];
-
-  for (const s of sizes) {
-    await prisma.bodySize.create({ data: s });
-  }
-
-  console.log(`  ✅ Created ${sizes.length} body sizes\n`);
-  return await prisma.bodySize.findMany({ orderBy: { sortOrder: "asc" } });
 }
 
 async function seedColors() {
@@ -184,7 +162,6 @@ interface ProductSeed {
 
 async function seedProducts(
   abayaLengths: Awaited<ReturnType<typeof seedAbayaLengths>>,
-  bodySizes: Awaited<ReturnType<typeof seedBodySizes>>,
   colors: Awaited<ReturnType<typeof seedColors>>,
   collections: Awaited<ReturnType<typeof seedCollections>>,
 ) {
@@ -410,26 +387,23 @@ async function seedProducts(
 
     for (const color of colorOptions) {
       for (const length of abayaLengths) {
-        for (const size of bodySizes) {
-          const colorSuffix = color ? `-${color.code}` : "";
-          const variantSku = `${p.sku}-${length.inches}-${size.code}${colorSuffix}`;
-          const priceAdjustment = color ? 20 : 0;
+        const colorSuffix = color ? `-${color.code}` : "";
+        const variantSku = `${p.sku}-${length.inches}${colorSuffix}`;
+        const priceAdjustment = color ? 20 : 0;
 
-          await prisma.productVariant.create({
-            data: {
-              sku: variantSku,
-              productId: product.id,
-              abayaLengthId: length.id,
-              bodySizeId: size.id,
-              colorId: color?.id ?? null,
-              priceAdjustment: priceAdjustment,
-              stock: Math.floor(Math.random() * 30) + 5,
-              lowStockAlert: 5,
-              isActive: true,
-            },
-          });
-          totalVariants++;
-        }
+        await prisma.productVariant.create({
+          data: {
+            sku: variantSku,
+            productId: product.id,
+            abayaLengthId: length.id,
+            colorId: color?.id ?? null,
+            priceAdjustment: priceAdjustment,
+            stock: Math.floor(Math.random() * 30) + 5,
+            lowStockAlert: 5,
+            isActive: true,
+          },
+        });
+        totalVariants++;
       }
     }
 
@@ -627,11 +601,10 @@ async function main() {
   await cleanDatabase();
 
   const abayaLengths = await seedAbayaLengths();
-  const bodySizes = await seedBodySizes();
   const colors = await seedColors();
   const collections = await seedCollections();
 
-  await seedProducts(abayaLengths, bodySizes, colors, collections);
+  await seedProducts(abayaLengths, colors, collections);
   await seedCoupons();
   await seedBanners();
   await seedShippingZones();

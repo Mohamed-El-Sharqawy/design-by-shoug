@@ -17,6 +17,7 @@ export function BannersPage() {
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
   const [formData, setFormData] = useState({
     imageUrl: '',
+    imageMobileUrl: '',
     buttonTextEn: '',
     buttonTextAr: '',
     href: '',
@@ -29,6 +30,7 @@ export function BannersPage() {
       setEditingBanner(banner)
       setFormData({
         imageUrl: banner.imageUrl,
+        imageMobileUrl: banner.imageMobileUrl || '',
         buttonTextEn: banner.buttonTextEn || '',
         buttonTextAr: banner.buttonTextAr || '',
         href: banner.href || '',
@@ -39,6 +41,7 @@ export function BannersPage() {
       setEditingBanner(null)
       setFormData({
         imageUrl: '',
+        imageMobileUrl: '',
         buttonTextEn: '',
         buttonTextAr: '',
         href: '',
@@ -102,11 +105,18 @@ export function BannersPage() {
                 className="flex items-center gap-4 p-4 hover:bg-slate-50"
               >
                 <GripVertical className="w-5 h-5 text-slate-400 cursor-grab" />
-                <img
-                  src={banner.imageUrl}
-                  alt=""
-                  className="w-32 h-20 object-cover rounded-lg"
-                />
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <img src={banner.imageUrl} alt="Desktop" className="w-32 h-20 object-cover rounded-lg" />
+                    <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white text-[8px] px-1 rounded">16:9</span>
+                  </div>
+                  {banner.imageMobileUrl && (
+                    <div className="relative">
+                      <img src={banner.imageMobileUrl} alt="Mobile" className="w-12 h-20 object-cover rounded-lg" />
+                      <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white text-[8px] px-1 rounded">9:16</span>
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
                   <p className="font-medium text-slate-900">
                     {banner.buttonTextEn || t('content.banners.noButtonText')}
@@ -156,21 +166,35 @@ export function BannersPage() {
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('content.banners.image')} *
-                </label>
-                <ImageUpload
-                  value={formData.imageUrl}
-                  onChange={(url) => setFormData({ ...formData, imageUrl: url })}
-                  onUpload={async (file) => {
-                    const result = await uploadImage.mutateAsync({
-                      file,
-                      folder: 'banners',
-                    })
-                    return result.url
-                  }}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {t('content.banners.image')} (16:9) *
+                  </label>
+                  <ImageUpload
+                    value={formData.imageUrl}
+                    onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                    onUpload={async (file) => {
+                      const result = await uploadImage.mutateAsync({ file, folder: 'banners' })
+                      return result.url
+                    }}
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Desktop / Landscape</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {t('content.banners.image')} (9:16)
+                  </label>
+                  <ImageUpload
+                    value={formData.imageMobileUrl}
+                    onChange={(url) => setFormData({ ...formData, imageMobileUrl: url })}
+                    onUpload={async (file) => {
+                      const result = await uploadImage.mutateAsync({ file, folder: 'banners' })
+                      return result.url
+                    }}
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Mobile / Portrait</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

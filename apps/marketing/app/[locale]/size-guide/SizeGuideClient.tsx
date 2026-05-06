@@ -2,15 +2,6 @@
 
 import { useTranslations } from "next-intl";
 
-const bodySizes = [
-  { size: "XS", bust: "80-84", waist: "60-64", hips: "86-90" },
-  { size: "S", bust: "84-88", waist: "64-68", hips: "90-94" },
-  { size: "M", bust: "88-92", waist: "68-72", hips: "94-98" },
-  { size: "L", bust: "92-96", waist: "72-76", hips: "98-102" },
-  { size: "XL", bust: "96-100", waist: "76-80", hips: "102-106" },
-  { size: "XXL", bust: "100-106", waist: "80-86", hips: "106-112" },
-];
-
 const lengths = [
   { label: "petite", cm: "140" },
   { label: "standard", cm: "150" },
@@ -68,46 +59,6 @@ export function SizeGuideClient({ locale }: { locale: string }) {
                 </p>
               </div>
             ))}
-          </div>
-        </div>
-
-        <div className="mb-20">
-          <h2 className="font-serif text-2xl sm:text-3xl text-[#1A1A1A] tracking-wide mb-3">
-            {t("bodySizeChart")}
-          </h2>
-          <p className="text-sm text-[#999] font-light leading-relaxed mb-6">
-            {t("bodySizeNote")}
-          </p>
-
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-[#FAF9F7]">
-                  <th className="px-4 py-3 text-xs tracking-widest uppercase text-[#8B7355] text-start border-b border-[#E8E4DF]">
-                    {t("size")}
-                  </th>
-                  <th className="px-4 py-3 text-xs tracking-widest uppercase text-[#8B7355] text-start border-b border-[#E8E4DF]">
-                    {t("bust")} (cm)
-                  </th>
-                  <th className="px-4 py-3 text-xs tracking-widest uppercase text-[#8B7355] text-start border-b border-[#E8E4DF]">
-                    {t("waist")} (cm)
-                  </th>
-                  <th className="px-4 py-3 text-xs tracking-widest uppercase text-[#8B7355] text-start border-b border-[#E8E4DF]">
-                    {t("hips")} (cm)
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {bodySizes.map((row) => (
-                  <tr key={row.size} className="border-b border-[#E8E4DF]">
-                    <td className="px-4 py-3 text-sm text-[#1A1A1A] font-light">{t(row.size)}</td>
-                    <td className="px-4 py-3 text-sm text-[#555] font-light">{row.bust}</td>
-                    <td className="px-4 py-3 text-sm text-[#555] font-light">{row.waist}</td>
-                    <td className="px-4 py-3 text-sm text-[#555] font-light">{row.hips}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
 

@@ -11,7 +11,6 @@ export const ProductImageInput = t.Object({
 export const VariantInput = t.Object({
   sku: t.String({ minLength: 1 }),
   abayaLengthId: t.String(),
-  bodySizeId: t.String(),
   colorId: t.Optional(t.Nullable(t.String())),
   priceAdjustment: t.Optional(t.Number()),
   stock: t.Optional(t.Number({ minimum: 0 })),
@@ -48,7 +47,6 @@ export const CreateVariantBody = t.Object({
   sku: t.String({ minLength: 1 }),
   productId: t.String(),
   abayaLengthId: t.String(),
-  bodySizeId: t.String(),
   colorId: t.Optional(t.Nullable(t.String())),
   priceAdjustment: t.Optional(t.Number()),
   stock: t.Optional(t.Number({ minimum: 0 })),

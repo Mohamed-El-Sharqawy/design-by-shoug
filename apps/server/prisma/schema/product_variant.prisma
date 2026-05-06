@@ -19,28 +19,6 @@ model AbayaLength {
   @@map("abaya_lengths")
 }
 
-model BodySize {
-  id String @id @default(cuid())
-
-  code    String @unique
-  labelEn String
-  labelAr String
-
-  bustInches    Decimal  @db.Decimal(4, 1)
-  hipInches     Decimal  @db.Decimal(4, 1)
-  sleevesInches Decimal? @db.Decimal(4, 2)
-
-  sortOrder Int     @default(0)
-  isActive  Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  variants ProductVariant[]
-
-  @@map("body_sizes")
-}
-
 model Color {
   id String @id @default(cuid())
 
@@ -70,9 +48,6 @@ model ProductVariant {
   abayaLengthId String
   abayaLength   AbayaLength @relation(fields: [abayaLengthId], references: [id])
 
-  bodySizeId String
-  bodySize   BodySize @relation(fields: [bodySizeId], references: [id])
-
   colorId String?
   color   Color?  @relation(fields: [colorId], references: [id])
 
@@ -88,7 +63,7 @@ model ProductVariant {
   cartItems  CartItem[]
   orderItems OrderItem[]
 
-  @@unique([productId, abayaLengthId, bodySizeId, colorId])
+  @@unique([productId, abayaLengthId, colorId])
   @@index([productId])
   @@index([stock])
   @@map("product_variants")

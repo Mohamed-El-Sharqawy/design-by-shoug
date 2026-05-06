@@ -2,6 +2,7 @@ import { t } from "elysia";
 
 export const CreateBannerBody = t.Object({
   imageUrl: t.String(),
+  imageMobileUrl: t.Optional(t.String()),
   buttonTextEn: t.Optional(t.String()),
   buttonTextAr: t.Optional(t.String()),
   href: t.Optional(t.String()),

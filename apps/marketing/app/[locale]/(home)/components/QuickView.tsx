@@ -34,10 +34,6 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
     variants.map((v) => v.abayaLength).filter(Boolean),
     (l) => l!.id
   );
-  const bodySizes = uniqueBy(
-    variants.map((v) => v.bodySize).filter(Boolean),
-    (b) => b!.id
-  );
   const colors = uniqueBy(
     variants.map((v) => v.color).filter((c): c is NonNullable<typeof c> => !!c),
     (c) => c.id
@@ -45,9 +41,6 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
 
   const [selectedLengthId, setSelectedLengthId] = useState<string | null>(
     lengths[0]?.id || null
-  );
-  const [selectedSizeId, setSelectedSizeId] = useState<string | null>(
-    bodySizes[0]?.id || null
   );
   const [selectedColorId, setSelectedColorId] = useState<string | null>(
     colors[0]?.id || null
@@ -58,7 +51,6 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
     if (open) {
       document.body.style.overflow = "hidden";
       setSelectedLengthId(lengths[0]?.id || null);
-      setSelectedSizeId(bodySizes[0]?.id || null);
       setSelectedColorId(colors[0]?.id || null);
       setAdded(false);
     } else {
@@ -71,9 +63,8 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
 
   const selectedVariant: ProductVariant | undefined = variants.find((v) => {
     const lengthMatch = !selectedLengthId || v.abayaLengthId === selectedLengthId;
-    const sizeMatch = !selectedSizeId || v.bodySizeId === selectedSizeId;
     const colorMatch = !colors.length || v.colorId === selectedColorId;
-    return lengthMatch && sizeMatch && colorMatch;
+    return lengthMatch && colorMatch;
   });
 
   const isOutOfStock = selectedVariant ? selectedVariant.stock <= 0 : false;
@@ -194,30 +185,6 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
                         }`}
                       >
                         {isRtl ? length!.labelAr : length!.labelEn}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {bodySizes.length > 0 && (
-                <div className="mb-5">
-                  <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2.5">
-                    {t("bodySize")}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {bodySizes.map((size) => (
-                      <button
-                        key={size!.id}
-                        type="button"
-                        onClick={() => setSelectedSizeId(size!.id)}
-                        className={`min-w-12 px-3 py-2 text-xs tracking-wide border transition-all duration-200 ${
-                          selectedSizeId === size!.id
-                            ? "border-[#1A1A1A] bg-[#1A1A1A] text-white"
-                            : "border-[#E8E4DF] text-[#1A1A1A] hover:border-[#1A1A1A]"
-                        }`}
-                      >
-                        {isRtl ? size!.labelAr : size!.labelEn}
                       </button>
                     ))}
                   </div>

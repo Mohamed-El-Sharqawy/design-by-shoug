@@ -10,6 +10,7 @@ export const bannerKeys = {
 
 export interface CreateBannerDto {
   imageUrl: string;
+  imageMobileUrl?: string;
   buttonTextEn?: string;
   buttonTextAr?: string;
   href?: string;

@@ -80,7 +80,6 @@ export abstract class ProductService {
             where: { isActive: true },
             include: {
               abayaLength: true,
-              bodySize: true,
               color: true,
             },
           },
@@ -113,12 +112,10 @@ export abstract class ProductService {
           where: { isActive: true },
           include: {
             abayaLength: true,
-            bodySize: true,
             color: true,
           },
           orderBy: [
             { abayaLength: { sortOrder: "asc" } },
-            { bodySize: { sortOrder: "asc" } },
           ],
         },
         collections: {
@@ -154,12 +151,10 @@ export abstract class ProductService {
           where: { isActive: true },
           include: {
             abayaLength: true,
-            bodySize: true,
             color: true,
           },
           orderBy: [
             { abayaLength: { sortOrder: "asc" } },
-            { bodySize: { sortOrder: "asc" } },
           ],
         },
         collections: {
@@ -190,7 +185,6 @@ export abstract class ProductService {
           },
         },
         abayaLength: true,
-        bodySize: true,
         color: true,
       },
     });
@@ -224,7 +218,6 @@ export abstract class ProductService {
               create: variants.map((v) => ({
                 sku: v.sku,
                 abayaLengthId: v.abayaLengthId,
-                bodySizeId: v.bodySizeId,
                 colorId: v.colorId,
                 priceAdjustment: v.priceAdjustment ?? 0,
                 stock: v.stock ?? 0,
@@ -244,7 +237,7 @@ export abstract class ProductService {
       include: {
         images: { orderBy: { sortOrder: "asc" } },
         variants: {
-          include: { abayaLength: true, bodySize: true, color: true },
+          include: { abayaLength: true, color: true },
         },
         collections: { include: { collection: true } },
       },
@@ -282,13 +275,12 @@ export abstract class ProductService {
 
     if (variants !== undefined) {
       await prisma.productVariant.deleteMany({ where: { productId: id } });
-      for (const v of variants) {
+        for (const v of variants) {
         await prisma.productVariant.create({
           data: {
             productId: id,
             sku: v.sku,
             abayaLengthId: v.abayaLengthId,
-            bodySizeId: v.bodySizeId,
             colorId: v.colorId,
             priceAdjustment: v.priceAdjustment ?? 0,
             stock: v.stock ?? 0,
@@ -320,7 +312,7 @@ export abstract class ProductService {
       include: {
         images: { orderBy: { sortOrder: "asc" } },
         variants: {
-          include: { abayaLength: true, bodySize: true, color: true },
+          include: { abayaLength: true, color: true },
         },
         collections: { include: { collection: true } },
       },
@@ -354,7 +346,6 @@ export abstract class ProductService {
       data: input,
       include: {
         abayaLength: true,
-        bodySize: true,
         color: true,
       },
     });
@@ -376,7 +367,6 @@ export abstract class ProductService {
       data: input,
       include: {
         abayaLength: true,
-        bodySize: true,
         color: true,
       },
     });
@@ -448,7 +438,6 @@ export abstract class ProductService {
           sku: v.sku,
           productId,
           abayaLengthId: v.abayaLengthId,
-          bodySizeId: v.bodySizeId,
           colorId: v.colorId,
           priceAdjustment: v.priceAdjustment ?? 0,
           stock: v.stock ?? 0,
@@ -457,7 +446,6 @@ export abstract class ProductService {
         },
         include: {
           abayaLength: true,
-          bodySize: true,
           color: true,
         },
       });

@@ -119,8 +119,7 @@ export function useAddToCart() {
           priceAdjustment: item.priceAdjustment,
           abayaLengthLabelEn: item.abayaLengthLabelEn,
           abayaLengthLabelAr: item.abayaLengthLabelAr,
-          bodySizeLabelEn: item.bodySizeLabelEn,
-          bodySizeLabelAr: item.bodySizeLabelAr,
+
           colorNameEn: item.colorNameEn,
           colorNameAr: item.colorNameAr,
           colorHex: item.colorHex,

@@ -61,13 +61,11 @@ export interface ProductVariant {
   productId: string;
   sku: string;
   abayaLengthId: string;
-  bodySizeId: string;
   colorId: string | null;
   stock: number;
   priceAdjustment: number;
   isActive: boolean;
   abayaLength?: AbayaLength;
-  bodySize?: BodySize;
   color?: Color | null;
 }
 
@@ -78,18 +76,6 @@ export interface AbayaLength {
   labelAr: string;
   idealHeightCm: number;
   idealHeightFt: string;
-  sortOrder: number;
-  isActive: boolean;
-}
-
-export interface BodySize {
-  id: string;
-  code: string;
-  labelEn: string;
-  labelAr: string;
-  bustInches: number;
-  hipInches: number;
-  sleevesInches: number | null;
   sortOrder: number;
   isActive: boolean;
 }
@@ -123,6 +109,7 @@ export interface Collection {
 export interface Banner {
   id: string;
   imageUrl: string;
+  imageMobileUrl: string | null;
   buttonTextEn: string | null;
   buttonTextAr: string | null;
   href: string | null;

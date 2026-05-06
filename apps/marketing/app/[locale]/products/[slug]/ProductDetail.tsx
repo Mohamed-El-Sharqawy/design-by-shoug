@@ -47,12 +47,6 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
         .sort((a, b) => a!.sortOrder - b!.sortOrder),
     [variants]
   );
-  const bodySizes = useMemo(
-    () =>
-      uniqueBy(variants.map((v) => v.bodySize).filter(Boolean), (b) => b!.id)
-        .sort((a, b) => a!.sortOrder - b!.sortOrder),
-    [variants]
-  );
   const colors = useMemo(
     () =>
       uniqueBy(
@@ -67,24 +61,12 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
     [variants]
   );
 
-  const bodySizeHasStock = useCallback(
-    (sizeId: string, lengthId: string | null) =>
-      variants.some(
-        (v) =>
-          v.bodySizeId === sizeId &&
-          (!lengthId || v.abayaLengthId === lengthId) &&
-          v.stock > 0
-      ),
-    [variants]
-  );
-
   const colorHasStock = useCallback(
-    (colorId: string, lengthId: string | null, sizeId: string | null) =>
+    (colorId: string, lengthId: string | null) =>
       variants.some(
         (v) =>
           v.colorId === colorId &&
           (!lengthId || v.abayaLengthId === lengthId) &&
-          (!sizeId || v.bodySizeId === sizeId) &&
           v.stock > 0
       ),
     [variants]
@@ -97,25 +79,21 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
     if (urlVariant) {
       const v = variants.find((v) => v.id === urlVariant && v.stock > 0);
       if (v) {
-        return { lengthId: v.abayaLengthId, sizeId: v.bodySizeId, colorId: v.colorId, qty: urlQty ? parseInt(urlQty, 10) || 1 : 1 };
+        return { lengthId: v.abayaLengthId, colorId: v.colorId, qty: urlQty ? parseInt(urlQty, 10) || 1 : 1 };
       }
     }
 
     const firstAvailableLength = lengths.find((l) => lengthHasStock(l!.id));
     const newLengthId = firstAvailableLength?.id || lengths[0]?.id || null;
 
-    const sizesForLength = bodySizes.filter((s) => bodySizeHasStock(s!.id, newLengthId));
-    const newSizeId = sizesForLength[0]?.id || bodySizes[0]?.id || null;
-
-    const colorsForSelection = colors.filter((c) => colorHasStock(c.id, newLengthId, newSizeId));
+    const colorsForSelection = colors.filter((c) => colorHasStock(c.id, newLengthId));
     const newColorId = colorsForSelection[0]?.id || colors[0]?.id || null;
 
-    return { lengthId: newLengthId, sizeId: newSizeId, colorId: newColorId, qty: urlQty ? parseInt(urlQty, 10) || 1 : 1 };
-  }, [searchParams, variants, lengths, bodySizes, colors, lengthHasStock, bodySizeHasStock, colorHasStock]);
+    return { lengthId: newLengthId, colorId: newColorId, qty: urlQty ? parseInt(urlQty, 10) || 1 : 1 };
+  }, [searchParams, variants, lengths, colors, lengthHasStock, colorHasStock]);
 
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedLengthId, setSelectedLengthId] = useState<string | null>(null);
-  const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null);
   const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [popupItem, setPopupItem] = useState<CartItemLocal | null>(null);
@@ -130,7 +108,6 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
     setSelectedImageIdx(0);
     const init = resolveInitial();
     setSelectedLengthId(init.lengthId);
-    setSelectedSizeId(init.sizeId);
     setSelectedColorId(init.colorId);
     setQuantity(init.qty);
     initialApplied.current = true;
@@ -151,40 +128,25 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
   const handleSelectLength = (id: string) => {
     if (!lengthHasStock(id)) return;
     setSelectedLengthId(id);
-    const sizesForLength = bodySizes.filter((s) => bodySizeHasStock(s!.id, id));
-    const newSizeId = sizesForLength[0]?.id || null;
-    setSelectedSizeId(newSizeId);
     const colorsForSelection = colors.filter((c) =>
-      colorHasStock(c.id, id, newSizeId)
+      colorHasStock(c.id, id)
     );
     const newColorId = colorsForSelection[0]?.id || null;
     setSelectedColorId(newColorId);
-    const newVariant = variants.find((v) => v.abayaLengthId === id && v.bodySizeId === newSizeId && (!colors.length || v.colorId === newColorId) && v.stock > 0);
-    pushUrl(newVariant?.id || null, quantity);
-  };
-
-  const handleSelectSize = (id: string) => {
-    if (!bodySizeHasStock(id, selectedLengthId)) return;
-    setSelectedSizeId(id);
-    const colorsForSelection = colors.filter((c) =>
-      colorHasStock(c.id, selectedLengthId, id)
-    );
-    const newColorId = colorsForSelection[0]?.id || null;
-    setSelectedColorId(newColorId);
-    const newVariant = variants.find((v) => v.abayaLengthId === selectedLengthId && v.bodySizeId === id && (!colors.length || v.colorId === newColorId) && v.stock > 0);
+    const newVariant = variants.find((v) => v.abayaLengthId === id && (!colors.length || v.colorId === newColorId) && v.stock > 0);
     pushUrl(newVariant?.id || null, quantity);
   };
 
   const handleSelectColor = (id: string) => {
-    if (!colorHasStock(id, selectedLengthId, selectedSizeId)) return;
+    if (!colorHasStock(id, selectedLengthId)) return;
     setSelectedColorId(id);
-    const newVariant = variants.find((v) => v.abayaLengthId === selectedLengthId && v.bodySizeId === selectedSizeId && v.colorId === id && v.stock > 0);
+    const newVariant = variants.find((v) => v.abayaLengthId === selectedLengthId && v.colorId === id && v.stock > 0);
     pushUrl(newVariant?.id || null, quantity);
   };
 
   useEffect(() => {
     if (initialApplied.current) {
-      const v = variants.find((v) => v.abayaLengthId === selectedLengthId && v.bodySizeId === selectedSizeId && (!colors.length || v.colorId === selectedColorId));
+      const v = variants.find((v) => v.abayaLengthId === selectedLengthId && (!colors.length || v.colorId === selectedColorId));
       pushUrl(v?.id || null, quantity);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only push URL when quantity changes; selection changes already push via handlers
@@ -196,9 +158,8 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
   const selectedVariant: ProductVariant | undefined = variants.find((v) => {
     const lengthMatch =
       !selectedLengthId || v.abayaLengthId === selectedLengthId;
-    const sizeMatch = !selectedSizeId || v.bodySizeId === selectedSizeId;
     const colorMatch = !colors.length || v.colorId === selectedColorId;
-    return lengthMatch && sizeMatch && colorMatch;
+    return lengthMatch && colorMatch;
   });
 
   const isOutOfStock = selectedVariant ? selectedVariant.stock <= 0 : false;
@@ -232,8 +193,6 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
       priceAdjustment: selectedVariant.priceAdjustment,
       abayaLengthLabelEn: selectedVariant.abayaLength?.labelEn || "",
       abayaLengthLabelAr: selectedVariant.abayaLength?.labelAr || "",
-      bodySizeLabelEn: selectedVariant.bodySize?.labelEn || "",
-      bodySizeLabelAr: selectedVariant.bodySize?.labelAr || "",
       colorNameEn: selectedVariant.color?.nameEn || "",
       colorNameAr: selectedVariant.color?.nameAr || "",
       colorHex: selectedVariant.color?.hexCode || null,
@@ -412,38 +371,6 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
               </div>
             )}
 
-            {bodySizes.length > 0 && (
-              <div className="mb-5">
-                <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2.5">
-                  {t("bodySize")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {bodySizes.map((size) => {
-                    const disabled = !bodySizeHasStock(size!.id, selectedLengthId);
-                    return (
-                      <button
-                        key={size!.id}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => handleSelectSize(size!.id)}
-                        className={`min-w-12 px-3 py-2 text-xs tracking-wide border transition-all duration-200 ${
-                          selectedSizeId === size!.id
-                            ? disabled
-                              ? "border-[#C4C4C4] bg-[#C4C4C4] text-white cursor-not-allowed"
-                              : "border-[#1A1A1A] bg-[#1A1A1A] text-white"
-                            : disabled
-                              ? "border-[#E8E4DF] text-[#C4C4C4] cursor-not-allowed line-through"
-                              : "border-[#E8E4DF] text-[#1A1A1A] hover:border-[#1A1A1A]"
-                        }`}
-                      >
-                        {isRtl ? size!.labelAr : size!.labelEn}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {colors.length > 0 && (
               <div className="mb-5">
                 <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2.5">
@@ -451,7 +378,7 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
                 </p>
                 <div className="flex flex-wrap gap-2.5">
                   {colors.map((color) => {
-                    const disabled = !colorHasStock(color.id, selectedLengthId, selectedSizeId);
+                    const disabled = !colorHasStock(color.id, selectedLengthId);
                     return (
                       <button
                         key={color.id}

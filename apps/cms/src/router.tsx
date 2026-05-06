@@ -15,7 +15,6 @@ import {
   ShippingPage,
   ColorsPage,
   AbayaLengthsPage,
-  BodySizesPage,
   CustomerReviewsPage,
 } from '@/pages'
 
@@ -83,10 +82,6 @@ export const router = createBrowserRouter([
       {
         path: 'abaya-lengths',
         element: <AbayaLengthsPage />,
-      },
-      {
-        path: 'body-sizes',
-        element: <BodySizesPage />,
       },
       {
         path: 'customer-reviews',
