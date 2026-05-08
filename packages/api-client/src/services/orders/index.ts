@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApiClient } from "../../context";
-import type { Order, PaginatedResponse, OrderStatus } from "@repo/types";
+import type { Order, PaginatedResponse, OrderStatus, PaymentStatus } from "@repo/types";
 
 export const orderKeys = {
   all: ["orders"] as const,
@@ -19,7 +19,8 @@ export interface OrderFilters {
 }
 
 export interface UpdateOrderStatusDto {
-  status: OrderStatus;
+  status?: OrderStatus;
+  paymentStatus?: PaymentStatus;
   notesAdmin?: string;
 }
 

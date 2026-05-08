@@ -14,6 +14,7 @@ interface CollectionProductBrowserProps {
   initialProducts: Product[];
   initialTotal: number;
   collectionId?: string;
+  isFeatured?: boolean;
   allCollections: Collection[];
   locale: string;
 }
@@ -70,6 +71,7 @@ export function CollectionProductBrowser({
   initialProducts,
   initialTotal,
   collectionId: initialCollectionId,
+  isFeatured: initialIsFeatured,
   allCollections,
   locale,
 }: CollectionProductBrowserProps) {
@@ -186,6 +188,7 @@ export function CollectionProductBrowser({
   const productFilters: Omit<ProductFilters, "page" | "limit"> = {
     isActive: true,
     collectionId: selectedCollectionId || undefined,
+    isFeatured: initialIsFeatured,
     sortBy,
     sortOrder,
     minPrice: appliedMinPrice || undefined,

@@ -19,6 +19,10 @@ export const adminRoutes = new Elysia({ prefix: "/admin" })
     { body: AdminLoginBody }
   )
   .use(requireAdmin)
+  .get("/stats", async () => {
+    const stats = await AdminService.getStats();
+    return { success: true, data: stats };
+  })
   .get("/admins", async () => {
     const admins = await AdminService.listAdmins();
 

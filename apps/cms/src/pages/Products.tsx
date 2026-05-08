@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from '@repo/i18n'
 import { useProducts, useDeleteProduct } from '@repo/api-client'
 import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -10,18 +10,21 @@ const PAGE_SIZE = 20
 export function ProductsPage() {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
-  const { data, isLoading } = useProducts({ search, page, limit: PAGE_SIZE })
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const { data, isLoading } = useProducts({ search: debouncedSearch, page, limit: PAGE_SIZE })
   const deleteProduct = useDeleteProduct()
 
   const handleDelete = async (id: string) => {
     if (window.confirm(t('common.confirmDelete'))) {
       await deleteProduct.mutateAsync(id)
     }
-  }
-
-  if (isLoading) {
-    return <div className="text-center py-8">{t('common.loading')}</div>
   }
 
   const products = data?.products || []
@@ -54,7 +57,9 @@ export function ProductsPage() {
           </div>
         </div>
 
-        {products.length > 0 ? (
+        {isLoading ? (
+          <div className="p-8 text-center text-slate-500">{t('common.loading')}</div>
+        ) : products.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">

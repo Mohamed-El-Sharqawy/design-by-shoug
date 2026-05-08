@@ -274,19 +274,60 @@ export abstract class ProductService {
     }
 
     if (variants !== undefined) {
-      await prisma.productVariant.deleteMany({ where: { productId: id } });
-        for (const v of variants) {
-        await prisma.productVariant.create({
-          data: {
-            productId: id,
-            sku: v.sku,
-            abayaLengthId: v.abayaLengthId,
-            colorId: v.colorId,
-            priceAdjustment: v.priceAdjustment ?? 0,
-            stock: v.stock ?? 0,
-            isActive: true,
-          },
+      const existingVariants = await prisma.productVariant.findMany({
+        where: { productId: id },
+        select: { id: true, abayaLengthId: true, colorId: true },
+      });
+
+      const newKeys = new Set(variants.map((v) => `${v.abayaLengthId}:${v.colorId ?? "null"}`));
+
+      const toDelete = existingVariants.filter(
+        (ev) => !newKeys.has(`${ev.abayaLengthId}:${ev.colorId ?? "null"}`)
+      );
+
+      const hasOrderItems = await prisma.orderItem.findFirst({
+        where: { variantId: { in: toDelete.map((v) => v.id) } },
+      });
+
+      if (hasOrderItems) {
+        const toSoftDelete = toDelete.map((v) => v.id);
+        await prisma.productVariant.updateMany({
+          where: { id: { in: toSoftDelete } },
+          data: { isActive: false },
         });
+      } else {
+        await prisma.productVariant.deleteMany({
+          where: { id: { in: toDelete.map((v) => v.id) } },
+        });
+      }
+
+      for (const v of variants) {
+        const existing = existingVariants.find(
+          (ev) => ev.abayaLengthId === v.abayaLengthId && (ev.colorId ?? null) === (v.colorId ?? null)
+        );
+        if (existing) {
+          await prisma.productVariant.update({
+            where: { id: existing.id },
+            data: {
+              sku: v.sku,
+              priceAdjustment: v.priceAdjustment ?? 0,
+              stock: v.stock ?? 0,
+              isActive: true,
+            },
+          });
+        } else {
+          await prisma.productVariant.create({
+            data: {
+              productId: id,
+              sku: v.sku,
+              abayaLengthId: v.abayaLengthId,
+              colorId: v.colorId,
+              priceAdjustment: v.priceAdjustment ?? 0,
+              stock: v.stock ?? 0,
+              isActive: true,
+            },
+          });
+        }
       }
     }
 

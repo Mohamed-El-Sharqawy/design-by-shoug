@@ -229,8 +229,8 @@ export function ProductFormPage() {
         shortDescEn: form.shortDescEn || undefined,
         shortDescAr: form.shortDescAr || undefined,
         basePrice: parseFloat(form.basePrice),
-        salePrice: form.salePrice ? parseFloat(form.salePrice) : undefined,
-        costPrice: form.costPrice ? parseFloat(form.costPrice) : undefined,
+        salePrice: form.salePrice ? parseFloat(form.salePrice) : null,
+        costPrice: form.costPrice ? parseFloat(form.costPrice) : null,
         hasColorOptions: form.hasColorOptions,
         metaTitleEn: form.metaTitleEn || undefined,
         metaTitleAr: form.metaTitleAr || undefined,
@@ -367,16 +367,12 @@ export function ProductFormPage() {
             <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('products.pricing')}</h2>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('products.basePrice')} (SAR) *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('products.basePrice')} (AED) *</label>
                 <input type="number" value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none" min="0" step="0.01" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('products.salePrice')} (SAR)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('products.salePrice')} (AED)</label>
                 <input type="number" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none" min="0" step="0.01" placeholder={t('common.optional')} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('products.costPrice', 'Cost Price')} (SAR)</label>
-                <input type="number" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none" min="0" step="0.01" placeholder={t('common.optional')} />
               </div>
             </div>
           </div>

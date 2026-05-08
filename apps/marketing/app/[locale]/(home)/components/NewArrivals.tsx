@@ -1,6 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import type { Product } from "@repo/types";
-import { ProductCard } from "@/components/ProductCard";
+import { ProductCarousel } from "@/components/ProductCarousel";
 
 const API_URL = process.env.API_URL || "http://localhost:3001";
 
@@ -15,7 +15,7 @@ async function getNewArrivalsProducts(): Promise<Product[]> {
     if (!collectionId) return [];
 
     const prodRes = await fetch(
-      `${API_URL}/products?collectionId=${collectionId}&isActive=true&limit=8`,
+      `${API_URL}/products?collectionId=${collectionId}&isActive=true&limit=12`,
       { next: { revalidate: 60 } }
     );
     if (!prodRes.ok) return [];
@@ -47,11 +47,7 @@ export async function NewArrivals() {
           <div className="mt-4 w-16 h-px bg-[#8B7355] ms-auto" />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        <ProductCarousel products={products} locale={locale} />
 
         <div className="text-end mt-12">
           <a

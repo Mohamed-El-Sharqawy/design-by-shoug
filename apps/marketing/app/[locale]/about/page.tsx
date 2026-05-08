@@ -1,5 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
+import Image from "next/image";
 
 export default async function AboutPage() {
   const locale = await getLocale();
@@ -20,8 +21,8 @@ export default async function AboutPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-20">
-          <div className="aspect-[4/5] bg-[#FAF9F7] relative">
-            <div className="absolute inset-0 flex items-center justify-center text-[#C4C4C4] text-sm">IMAGE</div>
+          <div className="aspect-4/5 bg-[#FAF9F7] relative">
+            <Image src="/about.png" alt="About Image" fill className="object-cover" />
           </div>
           <div className="flex flex-col justify-center">
             <h2 className="font-serif text-3xl sm:text-4xl text-[#1A1A1A] tracking-wide mb-6">

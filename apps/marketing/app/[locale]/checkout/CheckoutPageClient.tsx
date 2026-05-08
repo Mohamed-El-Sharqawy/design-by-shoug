@@ -135,29 +135,6 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
     ? (directItem ? directItem.unitPrice * directItem.quantity : 0)
     : cartSubtotal;
 
-  const calculateShipping = useCalculateShipping();
-
-  const calcShipping = useCallback(
-    async (city: string) => {
-      try {
-        const result = await calculateShipping.mutateAsync({ city, orderAmount: subtotal });
-        setShippingCost(result.cost ?? result.shippingCost ?? 0);
-      } catch {
-        setShippingCost(0);
-      }
-    },
-    [calculateShipping, subtotal]
-  );
-
-  useEffect(() => {
-    if (isGuest && newAddress.city) {
-      calcShipping(newAddress.city);
-    } else {
-      const addr = addresses.find((a) => a.id === selectedAddressId);
-      if (addr?.city) calcShipping(addr.city);
-    }
-  }, [selectedAddressId, addresses, calcShipping, isGuest, newAddress.city]);
-
   const validateCoupon = useValidateCoupon();
 
   const handleApplyCoupon = async () => {
@@ -241,10 +218,15 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             paymentMethod,
             notesCustomer: notes || undefined,
             couponCode: couponCode || undefined,
+            locale,
           }),
         });
         const json = await res.json();
         if (json.success && json.data?.order) {
+          if (json.data.checkoutUrl) {
+            window.location.href = json.data.checkoutUrl;
+            return;
+          }
           setOrderResult({
             orderNumber: json.data.order.orderNumber,
             orderId: json.data.order.id,
@@ -254,18 +236,29 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
           setCouponError(msg);
         }
       } else {
+        const guestItems = isGuest
+          ? { items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })) }
+          : {};
         const res = await fetch(`${API_URL}/orders/`, {
           method: "POST",
           headers,
           body: JSON.stringify({
             ...addressPayload,
+            ...guestItems,
             paymentMethod,
             notesCustomer: notes || undefined,
             couponCode: couponCode || undefined,
+            locale,
           }),
         });
         const json = await res.json();
         if (json.success && json.data?.order) {
+          if (json.data.checkoutUrl) {
+            clearCart.mutate();
+            window.location.href = json.data.checkoutUrl;
+            return;
+          }
+          clearCart.mutate();
           setOrderResult({
             orderNumber: json.data.order.orderNumber,
             orderId: json.data.order.id,
@@ -281,12 +274,6 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
       setPlacing(false);
     }
   };
-
-  useEffect(() => {
-    if (orderResult && !isBuyNow && paymentMethod === "CASH_ON_DELIVERY") {
-      clearCart.mutate();
-    }
-  }, [orderResult, isBuyNow, paymentMethod, clearCart]);
 
   const isEmpty = isBuyNow ? !directItem : items.length === 0;
 

@@ -17,6 +17,8 @@ export interface ProductFilters {
   search?: string;
   collectionId?: string;
   isActive?: boolean;
+  isFeatured?: boolean;
+  isNewArrival?: boolean;
   sortBy?: string;
   sortOrder?: string;
   minPrice?: string;

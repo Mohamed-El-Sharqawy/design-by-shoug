@@ -8,6 +8,7 @@ import {
   OrderIdParams,
 } from "./model";
 import { authPlugin, requireAuth, requireAdmin, type AuthUser } from "@/modules/auth";
+import { stripe } from "@/lib/stripe";
 
 const publicOrderRoutes = new Elysia({ prefix: "/orders" })
   .use(authPlugin)
@@ -51,6 +52,23 @@ const publicOrderRoutes = new Elysia({ prefix: "/orders" })
       params: OrderIdParams,
       body: t.Object({ paymentIntentId: t.String() }),
     }
+  )
+  .get(
+    "/verify-session",
+    async ({ query }) => {
+      const session = await stripe.checkout.sessions.retrieve(query.session_id);
+      if (!session || session.payment_status !== "paid") {
+        return { success: false, data: null };
+      }
+      const orderId = session.metadata?.orderId;
+      if (!orderId) {
+        return { success: false, data: null };
+      }
+      await OrderService.updatePaymentToPaid(orderId);
+      const order = await OrderService.getById(orderId);
+      return { success: true, data: order };
+    },
+    { query: t.Object({ session_id: t.String() }) }
   );
 
 const userOrderRoutes = new Elysia({ prefix: "/orders" })

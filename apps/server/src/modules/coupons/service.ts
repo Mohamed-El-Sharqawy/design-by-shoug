@@ -103,10 +103,6 @@ export abstract class CouponService {
       return { valid: false, message: "Coupon usage limit reached" };
     }
 
-    if (coupon.perUserLimit > 0 && !userId) {
-      return { valid: false, message: "Please log in to use this coupon" };
-    }
-
     if (coupon.perUserLimit > 0 && userId) {
       const userUsageCount = await prisma.order.count({
         where: {

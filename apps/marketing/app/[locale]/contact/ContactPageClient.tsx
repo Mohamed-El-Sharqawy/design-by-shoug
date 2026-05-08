@@ -42,8 +42,8 @@ export function ContactPageClient({ locale }: { locale: string }) {
                 </div>
                 <div>
                   <h3 className="text-xs tracking-widest uppercase text-[#8B7355] mb-1">{t("emailTitle")}</h3>
-                  <a href="mailto:hello@designbyshoug.com" className="text-sm text-[#1A1A1A] font-light hover:text-[#8B7355] transition-colors" dir="ltr">
-                    hello@designbyshoug.com
+                  <a href="mailto:ddesignbyshoug@gmail.com" className="text-sm text-[#1A1A1A] font-light hover:text-[#8B7355] transition-colors" dir="ltr">
+                    ddesignbyshoug@gmail.com
                   </a>
                 </div>
               </div>
@@ -57,7 +57,7 @@ export function ContactPageClient({ locale }: { locale: string }) {
                 <div>
                   <h3 className="text-xs tracking-widest uppercase text-[#8B7355] mb-1">{t("phoneTitle")}</h3>
                   <a href="tel:+971501234567" className="text-sm text-[#1A1A1A] font-light hover:text-[#8B7355] transition-colors" dir="ltr">
-                    +971 50 123 4567
+                    +971 50 739 7759
                   </a>
                 </div>
               </div>

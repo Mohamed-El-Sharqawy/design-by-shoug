@@ -10,7 +10,6 @@ import {
   BannersPage,
   InstagramPage,
   VideosPage,
-  FeaturedPage,
   CouponsPage,
   ShippingPage,
   ColorsPage,
@@ -62,10 +61,6 @@ export const router = createBrowserRouter([
       {
         path: 'videos',
         element: <VideosPage />,
-      },
-      {
-        path: 'featured',
-        element: <FeaturedPage />,
       },
       {
         path: 'coupons',

@@ -105,7 +105,7 @@ export function PageTransitionLoader() {
 
       addTimer(() => {
         setPhase("cover");
-        router.push(next);
+        router.push(next, { scroll: false });
       }, ENTER_MS);
     } catch { }
   }, [router, clearTimers, addTimer]);
@@ -121,6 +121,7 @@ export function PageTransitionLoader() {
   useEffect(() => {
     if (prevPath.current === pathname) return;
     prevPath.current = pathname;
+    window.scrollTo(0, 0);
 
     if (!isNavigating.current) return;
 

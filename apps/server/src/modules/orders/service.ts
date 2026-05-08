@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NotFoundError, ValidationError } from "@/lib/errors";
-import { createPaymentIntent, retrievePaymentIntent } from "@/lib/stripe";
+import { createCheckoutSession, retrievePaymentIntent } from "@/lib/stripe";
 import { sendOrderConfirmationEmail } from "@/lib/mail";
 import { CartService } from "@/modules/cart/service";
 import { CouponService } from "@/modules/coupons/service";
@@ -44,12 +44,6 @@ export abstract class OrderService {
     userId?: string,
     sessionId?: string
   ) {
-    const cart = await CartService.getCart(userId, sessionId);
-
-    if (!cart.items || cart.items.length === 0) {
-      throw new ValidationError("Cart is empty");
-    }
-
     let addressId = input.addressId;
 
     if (!addressId && input.address) {
@@ -76,20 +70,116 @@ export abstract class OrderService {
       throw new ValidationError("Shipping address is required");
     }
 
-    for (const item of cart.items) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: item.variantId },
-      });
+    let orderItemsData: {
+      variantId: string;
+      productNameEn: string;
+      productNameAr: string;
+      variantDetails: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+      isCustomSize: boolean;
+      customMeasurements: any;
+      note: string | null;
+      image: string | null;
+    }[];
+    let subtotal: number;
+    let couponCode: string | undefined;
 
-      if (!variant || variant.stock < item.quantity) {
-        throw new ValidationError(
-          `Insufficient stock for ${item.variant.product.nameEn}`
-        );
+    if ((userId || sessionId) && !input.items?.length) {
+      const cart = await CartService.getCart(userId, sessionId);
+
+      if (!cart.items || cart.items.length === 0) {
+        throw new ValidationError("Cart is empty");
       }
+
+      for (const item of cart.items) {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+        });
+
+        if (!variant || variant.stock < item.quantity) {
+          throw new ValidationError(
+            `Insufficient stock for ${item.variant.product.nameEn}`
+          );
+        }
+      }
+
+      couponCode = input.couponCode || cart.coupon?.code;
+      subtotal = cart.subtotal;
+
+      orderItemsData = cart.items.map((item: any) => ({
+        variantId: item.variantId,
+        productNameEn: item.variant.product.nameEn,
+        productNameAr: item.variant.product.nameAr,
+        variantDetails: `${item.variant.abayaLength.labelEn}${item.variant.color ? ` / ${item.variant.color.nameEn}` : ""}`,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        isCustomSize: item.isCustomSize || false,
+        customMeasurements: item.customMeasurements,
+        note: item.note,
+        image: item.variant.product.images?.[0]?.url || null,
+      }));
+    } else if (input.items && input.items.length > 0) {
+      orderItemsData = [];
+      subtotal = 0;
+
+      for (const item of input.items) {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+          include: {
+            product: {
+              include: {
+                images: { where: { isPrimary: true }, take: 1 },
+              },
+            },
+            abayaLength: true,
+            color: true,
+          },
+        });
+
+        if (!variant) {
+          throw new NotFoundError(`Product variant ${item.variantId}`);
+        }
+
+        if (!variant.isActive || !variant.product.isActive) {
+          throw new ValidationError("This product is not available");
+        }
+
+        if (variant.stock < item.quantity) {
+          throw new ValidationError(
+            `Insufficient stock for ${variant.product.nameEn}`
+          );
+        }
+
+        const basePrice = Number(variant.product.salePrice || variant.product.basePrice);
+        const priceAdjustment = Number(variant.priceAdjustment || 0);
+        const unitPrice = basePrice + priceAdjustment;
+        const totalPrice = unitPrice * item.quantity;
+        subtotal += totalPrice;
+
+        orderItemsData.push({
+          variantId: item.variantId,
+          productNameEn: variant.product.nameEn,
+          productNameAr: variant.product.nameAr,
+          variantDetails: `${variant.abayaLength?.labelEn || ""}${variant.color ? ` / ${variant.color.nameEn}` : ""}`,
+          quantity: item.quantity,
+          unitPrice,
+          totalPrice,
+          isCustomSize: item.isCustomSize || false,
+          customMeasurements: item.customMeasurements || undefined,
+          note: item.note || null,
+          image: variant.product.images?.[0]?.url || null,
+        });
+      }
+
+      couponCode = input.couponCode;
+    } else {
+      throw new ValidationError("Cart is empty");
     }
 
-    const couponCode = input.couponCode || cart.coupon?.code;
-    const coupon = await this.resolveCoupon(couponCode, cart.subtotal, userId);
+    const coupon = await this.resolveCoupon(couponCode, subtotal, userId);
 
     const shippingZone = await prisma.shippingZone.findFirst({
       where: {
@@ -99,7 +189,7 @@ export abstract class OrderService {
     });
 
     let shippingCost = shippingZone
-      ? shippingZone.freeShippingMin && cart.subtotal >= Number(shippingZone.freeShippingMin)
+      ? shippingZone.freeShippingMin && subtotal >= Number(shippingZone.freeShippingMin)
         ? 0
         : Number(shippingZone.baseCost)
       : 0;
@@ -109,7 +199,7 @@ export abstract class OrderService {
     }
 
     const discount = coupon.discount;
-    const total = cart.subtotal - discount + shippingCost;
+    const total = subtotal - discount + shippingCost;
 
     const order = await prisma.order.create({
       data: {
@@ -117,7 +207,7 @@ export abstract class OrderService {
         userId: userId || undefined,
         addressId,
         paymentMethod: input.paymentMethod,
-        subtotal: cart.subtotal,
+        subtotal,
         shippingCost,
         discount,
         total,
@@ -125,18 +215,7 @@ export abstract class OrderService {
         couponCode: coupon.couponCode,
         notesCustomer: input.notesCustomer,
         items: {
-          create: cart.items.map((item: any) => ({
-            variantId: item.variantId,
-            productNameEn: item.variant.product.nameEn,
-            productNameAr: item.variant.product.nameAr,
-            variantDetails: `${item.variant.abayaLength.labelEn}${item.variant.color ? ` / ${item.variant.color.nameEn}` : ""}`,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.totalPrice,
-            isCustomSize: item.isCustomSize || false,
-            customMeasurements: item.customMeasurements,
-            note: item.note,
-          })),
+          create: orderItemsData.map(({ image: _, ...rest }) => rest),
         },
       },
       include: {
@@ -145,16 +224,22 @@ export abstract class OrderService {
       },
     });
 
-    for (const item of cart.items) {
+    for (const item of orderItemsData) {
       await prisma.productVariant.update({
         where: { id: item.variantId },
         data: { stock: { decrement: item.quantity } },
       });
 
-      await prisma.product.update({
-        where: { id: item.variant.product.id },
-        data: { soldCount: { increment: item.quantity } },
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: item.variantId },
+        select: { productId: true },
       });
+      if (variant) {
+        await prisma.product.update({
+          where: { id: variant.productId },
+          data: { soldCount: { increment: item.quantity } },
+        });
+      }
     }
 
     if (coupon.couponId) {
@@ -164,17 +249,28 @@ export abstract class OrderService {
       });
     }
 
-    let paymentIntent = null;
+    let checkoutUrl = null;
     if (input.paymentMethod !== "CASH_ON_DELIVERY") {
-      paymentIntent = await createPaymentIntent({
-        amount: total,
+      const session = await createCheckoutSession({
+        lineItems: orderItemsData.map((item) => ({
+          name: `${item.productNameEn} - ${item.variantDetails}`,
+          image: item.image || undefined,
+          unitAmount: item.unitPrice,
+          quantity: item.quantity,
+        })),
         currency: "aed",
         metadata: {
           orderId: order.id,
           orderNumber: order.orderNumber,
         },
         customerEmail: input.email,
+        orderNumber: order.orderNumber,
+        locale: input.locale,
+        couponCode: couponCode || coupon.couponCode,
+        discountAmount: discount,
+        shippingCost,
       });
+      checkoutUrl = session.url;
     }
 
     const customerEmail = input.email || (userId ? (await prisma.user.findUnique({ where: { id: userId } }))?.email : null);
@@ -198,9 +294,7 @@ export abstract class OrderService {
 
     return {
       order,
-      paymentIntent: paymentIntent
-        ? { clientSecret: paymentIntent.client_secret }
-        : null,
+      checkoutUrl,
     };
   }
 
@@ -219,7 +313,11 @@ export abstract class OrderService {
     const variant = await prisma.productVariant.findUnique({
       where: { id: input.variantId },
       include: {
-        product: true,
+        product: {
+          include: {
+            images: { where: { isPrimary: true }, take: 1 },
+          },
+        },
         abayaLength: true,
         color: true,
       },
@@ -330,17 +428,29 @@ export abstract class OrderService {
       });
     }
 
-    let paymentIntent = null;
+    let checkoutUrl = null;
     if (input.paymentMethod !== "CASH_ON_DELIVERY") {
-      paymentIntent = await createPaymentIntent({
-        amount: total,
+      const variantDetails = `${variant.abayaLength?.labelEn || ""}${variant.color ? ` / ${variant.color.nameEn}` : ""}`;
+      const session = await createCheckoutSession({
+        lineItems: [{
+          name: `${variant.product.nameEn} - ${variantDetails}`,
+          image: variant.product.images?.[0]?.url || undefined,
+          unitAmount: unitPrice,
+          quantity: input.quantity,
+        }],
         currency: "aed",
         metadata: {
           orderId: order.id,
           orderNumber: order.orderNumber,
         },
         customerEmail: input.email,
+        orderNumber: order.orderNumber,
+        locale: input.locale,
+        couponCode: input.couponCode || coupon.couponCode,
+        discountAmount: discount,
+        shippingCost,
       });
+      checkoutUrl = session.url;
     }
 
     const customerEmail = input.email || (userId ? (await prisma.user.findUnique({ where: { id: userId } }))?.email : null);
@@ -364,9 +474,7 @@ export abstract class OrderService {
 
     return {
       order,
-      paymentIntent: paymentIntent
-        ? { clientSecret: paymentIntent.client_secret }
-        : null,
+      checkoutUrl,
     };
   }
 
@@ -529,27 +637,34 @@ export abstract class OrderService {
     }
 
     const updateData: Prisma.OrderUpdateInput = {
-      status: input.status,
       notesInternal: input.notesInternal,
     };
 
-    if (input.status === "SHIPPED") {
-      updateData.shippedAt = new Date();
-    } else if (input.status === "DELIVERED") {
-      updateData.deliveredAt = new Date();
-    } else if (input.status === "CANCELLED") {
-      updateData.cancelledAt = new Date();
+    if (input.status) {
+      updateData.status = input.status;
 
-      const orderItems = await prisma.orderItem.findMany({
-        where: { orderId: id },
-      });
+      if (input.status === "SHIPPED") {
+        updateData.shippedAt = new Date();
+      } else if (input.status === "DELIVERED") {
+        updateData.deliveredAt = new Date();
+      } else if (input.status === "CANCELLED") {
+        updateData.cancelledAt = new Date();
 
-      for (const item of orderItems) {
-        await prisma.productVariant.update({
-          where: { id: item.variantId },
-          data: { stock: { increment: item.quantity } },
+        const orderItems = await prisma.orderItem.findMany({
+          where: { orderId: id },
         });
+
+        for (const item of orderItems) {
+          await prisma.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
       }
+    }
+
+    if (input.paymentStatus) {
+      updateData.paymentStatus = input.paymentStatus;
     }
 
     return prisma.order.update({
@@ -570,6 +685,19 @@ export abstract class OrderService {
     }
 
     return prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: "PAID",
+        status: "CONFIRMED",
+      },
+    });
+  }
+
+  static async updatePaymentToPaid(orderId: string) {
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order || order.paymentStatus === "PAID") return;
+
+    await prisma.order.update({
       where: { id: orderId },
       data: {
         paymentStatus: "PAID",

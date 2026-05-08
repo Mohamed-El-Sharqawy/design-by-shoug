@@ -4,6 +4,46 @@ import { ConflictError, UnauthorizedError } from "@/lib/errors";
 import type { AdminLoginInput, CreateAdminInput } from "./model";
 
 export abstract class AdminService {
+  static async getStats() {
+    const [
+      totalOrders,
+      paidRevenue,
+      pendingRevenue,
+      totalProducts,
+      totalCustomers,
+      recentOrders,
+    ] = await Promise.all([
+      prisma.order.count(),
+      prisma.order.aggregate({ _sum: { total: true }, where: { paymentStatus: "PAID" } }),
+      prisma.order.aggregate({ _sum: { total: true }, where: { paymentStatus: "PENDING" } }),
+      prisma.product.count(),
+      prisma.user.count({ where: { role: "CUSTOMER" } }),
+      prisma.order.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: {
+          items: { take: 1 },
+          address: { select: { fullName: true } },
+        },
+      }),
+    ]);
+
+    return {
+      totalOrders,
+      totalRevenue: Number(paidRevenue._sum.total || 0),
+      pendingRevenue: Number(pendingRevenue._sum.total || 0),
+      totalProducts,
+      totalCustomers,
+      recentOrders: recentOrders.map((o) => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        customerName: o.address?.fullName || "Guest",
+        total: Number(o.total),
+        status: o.status,
+        createdAt: o.createdAt,
+      })),
+    };
+  }
   static async login(input: AdminLoginInput) {
     const admin = await prisma.user.findFirst({
       where: {

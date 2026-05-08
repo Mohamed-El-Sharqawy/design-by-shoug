@@ -76,7 +76,7 @@ export function ProductCard({ product }: ProductCardProps) {
             {hasDiscount ? (
               <>
                 <span className="text-[#8B7355] font-light">{formatPrice(product.salePrice!)}</span>
-                <span className="text-[#999] line-through text-sm">{formatPrice(product.basePrice)}</span>
+                <span className="text-[#999] line-through text-sm">{product.basePrice}</span>
               </>
             ) : (
               <span className="text-[#1A1A1A] font-light">{formatPrice(product.basePrice)}</span>

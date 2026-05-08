@@ -206,6 +206,8 @@ export interface Order {
   shippingCost: number;
   total: number;
   couponId: string | null;
+  couponCode: string | null;
+  coupon?: Coupon | null;
   addressId: string | null;
   notesCustomer: string | null;
   notesAdmin: string | null;

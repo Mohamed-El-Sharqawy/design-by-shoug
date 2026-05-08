@@ -13,6 +13,14 @@ const AddressSchema = t.Object({
   postalCode: t.Optional(t.String()),
 });
 
+const GuestOrderItemSchema = t.Object({
+  variantId: t.String(),
+  quantity: t.Number({ minimum: 1 }),
+  isCustomSize: t.Optional(t.Boolean()),
+  customMeasurements: t.Optional(CustomMeasurementsSchema),
+  note: t.Optional(t.String()),
+});
+
 export const CreateOrderBody = t.Object({
   addressId: t.Optional(t.String()),
   address: t.Optional(AddressSchema),
@@ -26,6 +34,8 @@ export const CreateOrderBody = t.Object({
   notesCustomer: t.Optional(t.String()),
   email: t.Optional(t.String({ format: "email" })),
   couponCode: t.Optional(t.String()),
+  items: t.Optional(t.Array(GuestOrderItemSchema)),
+  locale: t.Optional(t.String()),
 });
 
 // Direct purchase: buy a single item without adding to cart
@@ -47,10 +57,11 @@ export const DirectPurchaseBody = t.Object({
   notesCustomer: t.Optional(t.String()),
   email: t.Optional(t.String({ format: "email" })),
   couponCode: t.Optional(t.String()),
+  locale: t.Optional(t.String()),
 });
 
 export const UpdateOrderStatusBody = t.Object({
-  status: t.Union([
+  status: t.Optional(t.Union([
     t.Literal("PENDING"),
     t.Literal("CONFIRMED"),
     t.Literal("PROCESSING"),
@@ -58,7 +69,13 @@ export const UpdateOrderStatusBody = t.Object({
     t.Literal("DELIVERED"),
     t.Literal("CANCELLED"),
     t.Literal("REFUNDED"),
-  ]),
+  ])),
+  paymentStatus: t.Optional(t.Union([
+    t.Literal("PENDING"),
+    t.Literal("PAID"),
+    t.Literal("FAILED"),
+    t.Literal("REFUNDED"),
+  ])),
   notesInternal: t.Optional(t.String()),
 });
 

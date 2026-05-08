@@ -54,6 +54,7 @@ async function getCollection(slug: string) {
 
 interface ProductFilters {
   collectionId?: string;
+  isFeatured?: boolean;
   sort: SortOption;
   minPrice?: string;
   maxPrice?: string;
@@ -64,6 +65,7 @@ async function getFilteredProducts(filters: ProductFilters): Promise<{ products:
   try {
     const params = new URLSearchParams({ isActive: "true", limit: "20" });
     if (filters.collectionId) params.set("collectionId", filters.collectionId);
+    if (filters.isFeatured) params.set("isFeatured", "true");
     if (filters.page > 1) params.set("page", String(filters.page));
     const { sortBy, sortOrder } = buildSortParams(filters.sort);
     params.set("sortBy", sortBy);
@@ -104,8 +106,9 @@ function resolveServerFilters(
   const minPrice = typeof searchParams.minPrice === "string" ? searchParams.minPrice : undefined;
   const maxPrice = typeof searchParams.maxPrice === "string" ? searchParams.maxPrice : undefined;
   const page = typeof searchParams.page === "string" ? parseInt(searchParams.page) || 1 : 1;
+  const isFeatured = searchParams.featured === "true" ? true : undefined;
 
-  return { collectionId, sort, minPrice, maxPrice, page };
+  return { collectionId, isFeatured, sort, minPrice, maxPrice, page };
 }
 
 export async function generateMetadata({
@@ -118,6 +121,13 @@ export async function generateMetadata({
     return {
       title: "All Products | Design By Shoug",
       description: "Browse our complete collection of luxury abayas",
+    };
+  }
+
+  if (slug === "featured") {
+    return {
+      title: "Featured Pieces | Design By Shoug",
+      description: "Our handpicked selection of standout abayas",
     };
   }
 
@@ -164,16 +174,17 @@ export default async function CollectionDetailPage({
   if (isAll) {
     const filters = resolveServerFilters(sp, allCollections);
     const initial = await getFilteredProducts(filters);
+    const isFeaturedPage = filters.isFeatured;
 
     return (
       <section className="py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12 sm:mb-16">
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#1A1A1A] tracking-wide">
-              {t("allProducts")}
+              {isFeaturedPage ? t("featured") : t("allProducts")}
             </h1>
             <p className="mt-4 text-sm text-[#999] font-light tracking-wide">
-              {t("allProductsDesc")}
+              {isFeaturedPage ? t("featuredDesc") : t("allProductsDesc")}
             </p>
             <div className="mt-6 w-16 h-px bg-[#8B7355]" />
           </div>
@@ -183,6 +194,7 @@ export default async function CollectionDetailPage({
               initialTotal={initial.total}
               allCollections={allCollections}
               locale={locale}
+              isFeatured={filters.isFeatured}
             />
           </Suspense>
         </div>
