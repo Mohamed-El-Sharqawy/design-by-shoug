@@ -35,8 +35,8 @@ export interface CreateProductDto {
   shortDescEn?: string;
   shortDescAr?: string;
   basePrice: number;
-  salePrice?: number;
-  costPrice?: number;
+  salePrice?: number | null;
+  costPrice?: number | null;
   hasColorOptions?: boolean;
   metaTitleEn?: string;
   metaTitleAr?: string;
@@ -104,8 +104,8 @@ export interface CreateProductDto {
   shortDescEn?: string;
   shortDescAr?: string;
   basePrice: number;
-  salePrice?: number;
-  costPrice?: number;
+  salePrice?: number | null;
+  costPrice?: number | null;
   hasColorOptions?: boolean;
   metaTitleEn?: string;
   metaTitleAr?: string;

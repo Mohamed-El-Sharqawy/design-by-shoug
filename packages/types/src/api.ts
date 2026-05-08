@@ -6,11 +6,18 @@ export interface ApiResponse<T = unknown> {
 }
 
 export interface PaginatedResponse<T> {
-  items: T[];
+  items?: T[];
+  orders?: T[];
   total: number;
   page: number;
   limit: number;
   totalPages: number;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface ProductListResponse {

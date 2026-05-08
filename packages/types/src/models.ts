@@ -215,15 +215,19 @@ export interface Order {
   updatedAt: string;
   items?: OrderItem[];
   address?: Address;
+  user?: { email: string; firstName: string | null; lastName: string | null } | null;
 }
 
 export interface OrderItem {
   id: string;
   orderId: string;
   variantId: string;
+  productNameEn: string;
+  productNameAr: string;
+  variantDetails: string;
   quantity: number;
-  price: number;
-  total: number;
+  unitPrice: number;
+  totalPrice: number;
   isCustomSize: boolean;
   customMeasurements: CustomMeasurements | null;
   note: string | null;
