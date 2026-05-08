@@ -186,7 +186,7 @@ export function ShippingPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-lg mx-4 p-6">
+          <div className="bg-white rounded-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-slate-900 mb-6">
               {editingZone ? t('shipping.editZone') : t('shipping.addZone')}
             </h2>

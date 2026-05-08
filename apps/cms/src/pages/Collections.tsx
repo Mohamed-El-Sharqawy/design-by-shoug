@@ -164,7 +164,7 @@ export function CollectionsPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-8">
-          <div className="bg-white rounded-xl w-full max-w-2xl mx-4 p-6">
+          <div className="bg-white rounded-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-slate-900 mb-6">
               {editingCollection ? t('collections.editCollection') : t('collections.addCollection')}
             </h2>

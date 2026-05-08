@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { useTranslation } from '@repo/i18n'
 import { useProducts, useDeleteProduct } from '@repo/api-client'
-import { Plus, Pencil, Trash2, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { Product } from '@repo/types'
+
+const PAGE_SIZE = 20
 
 export function ProductsPage() {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
-  const { data, isLoading } = useProducts({ search })
+  const [page, setPage] = useState(1)
+  const { data, isLoading } = useProducts({ search, page, limit: PAGE_SIZE })
   const deleteProduct = useDeleteProduct()
 
   const handleDelete = async (id: string) => {
@@ -22,8 +25,7 @@ export function ProductsPage() {
   }
 
   const products = data?.products || []
-
-  console.log(products)
+  const pagination = data?.pagination
 
   return (
     <div>
@@ -45,7 +47,7 @@ export function ProductsPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               placeholder={t('common.search')}
               className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none"
             />
@@ -128,6 +130,54 @@ export function ProductsPage() {
           </div>
         ) : (
           <div className="p-8 text-center text-slate-500">{t('common.noData')}</div>
+        )}
+
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+            <p className="text-sm text-slate-500">
+              {(pagination.page - 1) * pagination.limit + 1}&ndash;{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === pagination.totalPages || Math.abs(p - page) <= 1)
+                .reduce<(number | string)[]>((acc, p, i, arr) => {
+                  acc.push(p)
+                  if (i < arr.length - 1 && arr[i + 1] !== (p as number) + 1) acc.push('...')
+                  return acc
+                }, [])
+                .map((item, i) =>
+                  typeof item === 'string' ? (
+                    <span key={`dots-${i}`} className="px-2 text-slate-400 text-sm">...</span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => setPage(item)}
+                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                        page === item
+                          ? 'bg-slate-900 text-white'
+                          : 'hover:bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+              <button
+                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                disabled={page === pagination.totalPages}
+                className="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
