@@ -361,7 +361,9 @@
     "save": "Save",
     "cancel": "Cancel",
     "cartEmpty": "Your cart is empty",
-    "cartEmptyDesc": "Add items to your cart before checking out."
+    "cartEmptyDesc": "Add items to your cart before checking out.",
+    "email": "Email (for order confirmation)",
+    "emailPlaceholder": "your@email.com"
   },
   "About": {
     "title": "About Us",

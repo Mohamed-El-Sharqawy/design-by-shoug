@@ -63,12 +63,14 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   const buyNowQty = searchParams.get("qty") ? parseInt(searchParams.get("qty")!) : 1;
   const isBuyNow = !!buyNowVariantId;
 
+  const isGuest = !token;
   const [step, setStep] = useState<Step>("address");
-  const { data: addresses = [] } = useAddresses();
+  const { data: addresses = [] } = useAddresses({ enabled: !!token });
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  const [showNewAddress, setShowNewAddress] = useState(false);
+  const [showNewAddress, setShowNewAddress] = useState(isGuest);
   const [newAddress, setNewAddress] = useState(emptyAddress);
   const [paymentMethod, setPaymentMethod] = useState<"CASH_ON_DELIVERY" | "CREDIT_CARD">("CASH_ON_DELIVERY");
+  const [guestEmail, setGuestEmail] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [couponError, setCouponError] = useState("");
@@ -95,6 +97,10 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
       if (def) setSelectedAddressId(def.id);
     }
   }, [addresses, selectedAddressId]);
+
+  const guestAddressReady = isGuest
+    ? !!(newAddress.fullName && newAddress.phone && newAddress.country && newAddress.city && newAddress.street)
+    : false;
 
   // Map variant query data to DirectItem
   const directItem: DirectItem | null = (() => {
@@ -144,9 +150,13 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   );
 
   useEffect(() => {
-    const addr = addresses.find((a) => a.id === selectedAddressId);
-    if (addr?.city) calcShipping(addr.city);
-  }, [selectedAddressId, addresses, calcShipping]);
+    if (isGuest && newAddress.city) {
+      calcShipping(newAddress.city);
+    } else {
+      const addr = addresses.find((a) => a.id === selectedAddressId);
+      if (addr?.city) calcShipping(addr.city);
+    }
+  }, [selectedAddressId, addresses, calcShipping, isGuest, newAddress.city]);
 
   const validateCoupon = useValidateCoupon();
 
@@ -168,12 +178,16 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
     }
   };
 
-  const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
+  const selectedAddress = addresses.find((a) => a.id === selectedAddressId) || null;
 
   const createAddress = useCreateAddress();
 
   const handleAddAddress = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isGuest) {
+      setStep("payment");
+      return;
+    }
     createAddress.mutate(
       { ...newAddress, isDefault: addresses.length === 0 },
       {
@@ -187,12 +201,29 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   };
 
   const handlePlaceOrder = async () => {
-    if (!selectedAddress) return;
+    if (!selectedAddress && !guestAddressReady) return;
 
     if (user && !user.emailVerified) {
       setShowVerifyModal(true);
       return;
     }
+
+    const addressPayload = isGuest
+      ? {
+          address: {
+            fullName: newAddress.fullName,
+            phone: newAddress.phone,
+            country: newAddress.country,
+            city: newAddress.city,
+            district: newAddress.district || undefined,
+            street: newAddress.street,
+            building: newAddress.building || undefined,
+            apartment: newAddress.apartment || undefined,
+            postalCode: newAddress.postalCode || undefined,
+          },
+          email: guestEmail || undefined,
+        }
+      : { addressId: selectedAddress!.id };
 
     setPlacing(true);
     try {
@@ -206,7 +237,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
           body: JSON.stringify({
             variantId: directItem.variantId,
             quantity: directItem.quantity,
-            addressId: selectedAddress.id,
+            ...addressPayload,
             paymentMethod,
             notesCustomer: notes || undefined,
             couponCode: couponCode || undefined,
@@ -227,7 +258,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
           method: "POST",
           headers,
           body: JSON.stringify({
-            addressId: selectedAddress.id,
+            ...addressPayload,
             paymentMethod,
             notesCustomer: notes || undefined,
             couponCode: couponCode || undefined,
@@ -391,13 +422,15 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => setShowNewAddress(!showNewAddress)}
-                  className="text-xs tracking-widest uppercase text-[#8B7355] hover:text-[#7A6348] transition-colors font-light mb-4"
-                >
-                  + {t("addNewAddress")}
-                </button>
+                {!isGuest && (
+                  <button
+                    type="button"
+                    onClick={() => setShowNewAddress(!showNewAddress)}
+                    className="text-xs tracking-widest uppercase text-[#8B7355] hover:text-[#7A6348] transition-colors font-light mb-4"
+                  >
+                    + {t("addNewAddress")}
+                  </button>
+                )}
 
                 {showNewAddress && (
                   <form onSubmit={handleAddAddress} className="p-6 border border-[#E8E4DF] bg-[#FAF9F7] mb-6">
@@ -437,8 +470,10 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
                       </div>
                     </div>
                     <div className="flex gap-3 mt-6">
-                      <button type="submit" className="px-6 py-2.5 bg-[#1A1A1A] text-white text-xs tracking-widest uppercase font-light hover:bg-[#333] transition-colors">{t("save")}</button>
-                      <button type="button" onClick={() => setShowNewAddress(false)} className="px-6 py-2.5 border border-[#E8E4DF] text-[#1A1A1A] text-xs tracking-widest uppercase font-light hover:border-[#1A1A1A] transition-colors">{t("cancel")}</button>
+                      <button type="submit" className="px-6 py-2.5 bg-[#1A1A1A] text-white text-xs tracking-widest uppercase font-light hover:bg-[#333] transition-colors">{isGuest ? t("paymentMethod") : t("save")}</button>
+                      {!isGuest && (
+                        <button type="button" onClick={() => setShowNewAddress(false)} className="px-6 py-2.5 border border-[#E8E4DF] text-[#1A1A1A] text-xs tracking-widest uppercase font-light hover:border-[#1A1A1A] transition-colors">{t("cancel")}</button>
+                      )}
                     </div>
                   </form>
                 )}
@@ -446,7 +481,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
                 <div className="flex justify-end">
                   <button
                     type="button"
-                    disabled={!selectedAddressId}
+                    disabled={!selectedAddressId && !guestAddressReady}
                     onClick={() => setStep("payment")}
                     className="px-8 py-3.5 bg-[#1A1A1A] text-white text-xs tracking-widest uppercase font-light hover:bg-[#333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
@@ -459,6 +494,19 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             {step === "payment" && (
               <div>
                 <h2 className="font-serif text-2xl text-[#1A1A1A] tracking-wide mb-6">{t("paymentMethod")}</h2>
+
+                {isGuest && (
+                  <div className="mb-6">
+                    <label className="block text-xs tracking-widest uppercase text-[#8B7355] mb-1.5">{t("email")}</label>
+                    <input
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      placeholder={t("emailPlaceholder")}
+                      className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A]"
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-3 mb-8">
                   <label
@@ -535,13 +583,13 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
               <div>
                 <h2 className="font-serif text-2xl text-[#1A1A1A] tracking-wide mb-6">{t("orderSummary")}</h2>
 
-                {selectedAddress && (
+                {(selectedAddress || guestAddressReady) && (
                   <div className="p-4 border border-[#E8E4DF] mb-6">
                     <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2">{t("shippingAddress")}</p>
-                    <p className="text-sm text-[#1A1A1A] font-light">{selectedAddress.fullName}</p>
-                    <p className="text-xs text-[#999] font-light" dir="ltr">{selectedAddress.phone}</p>
+                    <p className="text-sm text-[#1A1A1A] font-light">{selectedAddress?.fullName || newAddress.fullName}</p>
+                    <p className="text-xs text-[#999] font-light" dir="ltr">{selectedAddress?.phone || newAddress.phone}</p>
                     <p className="text-sm text-[#555] font-light mt-1">
-                      {selectedAddress.street}{selectedAddress.building ? `, ${selectedAddress.building}` : ""}, {selectedAddress.city}, {selectedAddress.country}
+                      {(selectedAddress?.street || newAddress.street)}{((selectedAddress?.building || newAddress.building) ? `, ${selectedAddress?.building || newAddress.building}` : "")}, {selectedAddress?.city || newAddress.city}, {selectedAddress?.country || newAddress.country}
                     </p>
                   </div>
                 )}

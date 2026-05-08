@@ -57,7 +57,7 @@ export abstract class OrderService {
         const tempAddress = await prisma.address.create({
           data: {
             ...input.address,
-            userId: "guest",
+            userId: undefined,
           },
         });
         addressId = tempAddress.id;
@@ -114,7 +114,7 @@ export abstract class OrderService {
     const order = await prisma.order.create({
       data: {
         orderNumber: generateOrderNumber(),
-        userId: userId || "guest",
+        userId: userId || undefined,
         addressId,
         paymentMethod: input.paymentMethod,
         subtotal: cart.subtotal,
@@ -247,12 +247,12 @@ export abstract class OrderService {
     let addressId = input.addressId;
     if (!addressId && input.address) {
       const newAddress = await prisma.address.create({
-        data: {
-          ...input.address,
-          userId: userId || "guest",
-        },
-      });
-      addressId = newAddress.id;
+          data: {
+            ...input.address,
+            userId: userId || undefined,
+          },
+        });
+        addressId = newAddress.id;
     }
 
     if (!addressId) {
@@ -282,7 +282,7 @@ export abstract class OrderService {
     const order = await prisma.order.create({
       data: {
         orderNumber: generateOrderNumber(),
-        userId: userId || "guest",
+        userId: userId || undefined,
         addressId,
         paymentMethod: input.paymentMethod,
         subtotal,
@@ -398,7 +398,7 @@ export abstract class OrderService {
       throw new NotFoundError("Order");
     }
 
-    if (userId && order.userId !== userId && order.userId !== "guest") {
+    if (userId && order.userId !== userId && order.userId !== null) {
       throw new NotFoundError("Order");
     }
 

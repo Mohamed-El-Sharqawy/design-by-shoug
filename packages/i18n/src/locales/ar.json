@@ -361,7 +361,9 @@
     "save": "حفظ",
     "cancel": "إلغاء",
     "cartEmpty": "السلة فارغة",
-    "cartEmptyDesc": "أضيفي منتجات إلى سلتك قبل إتمام الطلب."
+    "cartEmptyDesc": "أضيفي منتجات إلى سلتك قبل إتمام الطلب.",
+    "email": "البريد الإلكتروني (لتأكيد الطلب)",
+    "emailPlaceholder": "your@email.com"
   },
   "About": {
     "title": "من نحن",

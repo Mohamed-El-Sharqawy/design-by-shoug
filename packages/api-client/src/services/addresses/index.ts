@@ -37,11 +37,12 @@ export const addressKeys = {
   list: () => [...addressKeys.all, "list"] as const,
 };
 
-export function useAddresses() {
+export function useAddresses(options?: { enabled?: boolean }) {
   const client = useApiClient();
   return useQuery({
     queryKey: addressKeys.list(),
     queryFn: () => client.get<Address[]>("/addresses"),
+    enabled: options?.enabled !== false,
   });
 }
 
