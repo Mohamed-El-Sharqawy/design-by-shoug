@@ -83,7 +83,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative group/carousel">
       <div
         ref={scrollRef}
         onPointerDown={onPointerDown}
@@ -91,7 +91,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onClickCapture={onClickCapture}
-        className="flex gap-4 sm:gap-6 lg:gap-8 overflow-x-auto scroll-smooth px-1 py-2 select-none cursor-grab"
+        className="flex gap-4 sm:gap-6 lg:gap-8 overflow-x-auto scroll-smooth pl-1 pr-1 py-2 select-none cursor-grab"
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
@@ -112,7 +112,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
       {canScrollLeft && (
         <button
           onClick={() => scrollByCard("left")}
-          className="absolute -left-3 sm:-left-4 lg:-left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-lg border border-[#E8E4DF] flex items-center justify-center hover:bg-white transition-colors"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-lg border border-[#E8E4DF] flex items-center justify-center hover:bg-white transition-colors opacity-0 group-hover/carousel:opacity-100 focus:opacity-100"
           aria-label="Scroll left"
         >
           <svg className="w-4 h-4 text-[#1A1A1A]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -123,7 +123,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
       {canScrollRight && (
         <button
           onClick={() => scrollByCard("right")}
-          className="absolute -right-3 sm:-right-4 lg:-right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-lg border border-[#E8E4DF] flex items-center justify-center hover:bg-white transition-colors"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-lg border border-[#E8E4DF] flex items-center justify-center hover:bg-white transition-colors opacity-0 group-hover/carousel:opacity-100 focus:opacity-100"
           aria-label="Scroll right"
         >
           <svg className="w-4 h-4 text-[#1A1A1A]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductGridSkeleton } from "@/components/Skeletons";
 import { useInfiniteProducts, type ProductFilters } from "@repo/api-client";
 import type { Collection, Product } from "@repo/types";
 
@@ -477,9 +478,7 @@ export function CollectionProductBrowser({
           </div>
         </>
       ) : isLoading ? (
-        <div className="flex justify-center py-16">
-          <span className="w-8 h-8 border-2 border-[#E8E4DF] border-t-[#8B7355] rounded-full animate-spin" />
-        </div>
+        <ProductGridSkeleton count={8} />
       ) : (
         <div className="text-center py-16">
           <p className="text-sm text-[#999] font-light">{t("noProducts")}</p>

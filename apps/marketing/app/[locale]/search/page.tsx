@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useSearch } from "@repo/api-client";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductGridSkeleton, CollectionGridSkeleton } from "@/components/Skeletons";
 
 export default function SearchPage() {
   const t = useTranslations("SearchPage");
@@ -48,9 +49,20 @@ export default function SearchPage() {
             </div>
 
             {loading && (
-              <div className="flex justify-center py-20">
-                <div className="w-8 h-8 border-2 border-[#E8E4DF] border-t-[#8B7355] rounded-full animate-spin" />
-              </div>
+              <>
+                <div className="mb-12">
+                  <h2 className="text-xs tracking-widest uppercase text-[#8B7355] mb-6">
+                    {t("collections")}
+                  </h2>
+                  <CollectionGridSkeleton count={3} />
+                </div>
+                <div>
+                  <h2 className="text-xs tracking-widest uppercase text-[#8B7355] mb-6">
+                    {t("products")}
+                  </h2>
+                  <ProductGridSkeleton count={8} />
+                </div>
+              </>
             )}
 
             {!loading && results && results.collections.length === 0 && results.products.length === 0 && (

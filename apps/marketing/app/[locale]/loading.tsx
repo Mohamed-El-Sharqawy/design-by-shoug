@@ -1,14 +1,14 @@
+import { ProductGridSkeleton } from "@/components/Skeletons";
+
 export default function Loading() {
   return (
-    <section className="py-24 sm:py-32 bg-white min-h-screen flex items-center justify-center">
-      <div className="flex flex-col items-center gap-6">
-        <div className="relative w-10 h-10">
-          <div className="absolute inset-0 border-2 border-[#E8E4DF] rounded-full" />
-          <div className="absolute inset-0 border-2 border-transparent border-t-[#1A1A1A] rounded-full animate-spin" />
+    <section className="py-16 sm:py-20 lg:py-24 bg-white min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12 sm:mb-16 animate-pulse">
+          <div className="h-10 bg-[#E8E4DF] rounded w-64 mx-auto" />
+          <div className="mt-6 w-16 h-px bg-[#E8E4DF] mx-auto" />
         </div>
-        <span className="text-xs tracking-widest uppercase text-[#999] font-light">
-          Loading...
-        </span>
+        <ProductGridSkeleton />
       </div>
     </section>
   );
