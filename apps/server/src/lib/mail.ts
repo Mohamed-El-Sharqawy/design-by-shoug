@@ -129,6 +129,7 @@ export interface OrderConfirmationDetails {
     country: string;
   };
   customerNotes?: string | null;
+  couponCode?: string | null;
 }
 
 function buildItemsHtml(items: OrderItemDetail[]): string {
@@ -203,7 +204,7 @@ export async function sendOrderConfirmationEmail(
 
         <div style="text-align: right; margin-top: 16px;">
           <p style="margin: 4px 0;">Subtotal: ${orderDetails.subtotal}</p>
-          ${orderDetails.discount && orderDetails.discount !== "AED 0.00" ? `<p style="margin: 4px 0; color: #8B7355;">Discount: -${orderDetails.discount}</p>` : ""}
+          ${orderDetails.couponCode ? `<p style="margin: 4px 0; color: #8B7355;">Coupon <strong>${orderDetails.couponCode}</strong> applied${orderDetails.discount && orderDetails.discount !== "AED 0.00" ? `: -${orderDetails.discount}` : ""}</p>` : orderDetails.discount && orderDetails.discount !== "AED 0.00" ? `<p style="margin: 4px 0; color: #8B7355;">Discount: -${orderDetails.discount}</p>` : ""}
           <p style="margin: 4px 0;">Shipping: ${orderDetails.shipping}</p>
           <p style="margin: 4px 0; font-weight: bold; font-size: 18px;">Total: ${orderDetails.total}</p>
         </div>
@@ -263,7 +264,7 @@ export async function sendOwnerOrderNotification(
 
         <div style="text-align: right; margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
           <p style="margin: 4px 0;">Subtotal: ${orderDetails.subtotal}</p>
-          ${orderDetails.discount && orderDetails.discount !== "AED 0.00" ? `<p style="margin: 4px 0; color: #8B7355;">Discount: -${orderDetails.discount}</p>` : ""}
+          ${orderDetails.couponCode ? `<p style="margin: 4px 0; color: #8B7355;">Coupon <strong>${orderDetails.couponCode}</strong> applied${orderDetails.discount && orderDetails.discount !== "AED 0.00" ? `: -${orderDetails.discount}` : ""}</p>` : orderDetails.discount && orderDetails.discount !== "AED 0.00" ? `<p style="margin: 4px 0; color: #8B7355;">Discount: -${orderDetails.discount}</p>` : ""}
           <p style="margin: 4px 0;">Shipping: ${orderDetails.shipping}</p>
           <p style="margin: 4px 0; font-weight: bold; font-size: 18px;">Total: ${orderDetails.total}</p>
         </div>

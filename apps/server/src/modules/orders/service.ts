@@ -302,6 +302,7 @@ export abstract class OrderService {
           }
         : undefined,
       customerNotes: input.notesCustomer || null,
+      couponCode: order.couponCode || null,
     };
 
     try {
@@ -506,6 +507,7 @@ export abstract class OrderService {
           }
         : undefined,
       customerNotes: input.note || null,
+      couponCode: order.couponCode || null,
     };
 
     try {
