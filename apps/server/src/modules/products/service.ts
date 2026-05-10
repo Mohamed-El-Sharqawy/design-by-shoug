@@ -75,7 +75,7 @@ export abstract class ProductService {
         take: limit,
         orderBy,
         include: {
-          images: { where: { isPrimary: true }, take: 1 },
+          images: { orderBy: { sortOrder: "asc" } },
           variants: {
             where: { isActive: true },
             include: {
@@ -181,7 +181,7 @@ export abstract class ProductService {
       include: {
         product: {
           include: {
-            images: { where: { isPrimary: true }, take: 1 },
+          images: { orderBy: { sortOrder: "asc" } },
           },
         },
         abayaLength: true,

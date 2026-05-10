@@ -70,6 +70,9 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
   const [selectedLengthId, setSelectedLengthId] = useState<string | null>(null);
   const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+
+  const images = product.images || [];
 
   useEffect(() => {
     if (open) {
@@ -83,6 +86,7 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
       setSelectedLengthId(newLengthId);
       setSelectedColorId(newColorId);
       setAdded(false);
+      setSelectedImageIdx(0);
     } else {
       document.body.style.overflow = "";
     }
@@ -174,29 +178,57 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
           </button>
 
           <div className="grid grid-cols-1 sm:grid-cols-2">
-            <div className="relative aspect-3/4 sm:aspect-auto sm:min-h-[500px] bg-[#FAF9F7]">
-              {primaryImage ? (
-                <Image
-                  src={primaryImage.url}
-                  alt={name}
-                  fill
-                  className="object-cover object-center"
-                  sizes="(max-width: 640px) 100vw, 50vw"
-                  priority
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[#C4C4C4] text-sm">{t("noImage")}</span>
+            <div className="bg-[#FAF9F7]">
+              <div className="relative aspect-3/4 sm:aspect-auto sm:min-h-[500px]">
+                {images[selectedImageIdx] ? (
+                  <Image
+                    src={images[selectedImageIdx].url}
+                    alt={name}
+                    fill
+                    className="object-cover object-center"
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                    priority
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[#C4C4C4] text-sm">{t("noImage")}</span>
+                  </div>
+                )}
+                <div className="absolute top-4 inset-s-4 flex flex-col gap-2">
+                  {product.isNewArrival && (
+                    <span className="px-3 py-1 bg-[#1A1A1A] text-white text-[10px] tracking-widest uppercase">{t("new")}</span>
+                  )}
+                  {hasDiscount && (
+                    <span className="px-3 py-1 bg-[#8B7355] text-white text-[10px] tracking-widest uppercase">{t("sale")}</span>
+                  )}
+                </div>
+              </div>
+
+              {images.length > 1 && (
+                <div className="flex gap-2 p-3 overflow-x-auto">
+                  {images.map((img, idx) => (
+                    <button
+                      key={img.id}
+                      type="button"
+                      onClick={() => setSelectedImageIdx(idx)}
+                      className={`relative w-14 h-18 shrink-0 overflow-hidden border-2 transition-all duration-200 ${
+                        idx === selectedImageIdx
+                          ? "border-[#1A1A1A]"
+                          : "border-[#E8E4DF] hover:border-[#999]"
+                      }`}
+                    >
+                      <Image
+                        src={img.url}
+                        alt={name}
+                        fill
+                        className="object-cover"
+                        sizes="56px"
+                        priority={idx < 4}
+                      />
+                    </button>
+                  ))}
                 </div>
               )}
-              <div className="absolute top-4 inset-s-4 flex flex-col gap-2">
-                {product.isNewArrival && (
-                  <span className="px-3 py-1 bg-[#1A1A1A] text-white text-[10px] tracking-widest uppercase">{t("new")}</span>
-                )}
-                {hasDiscount && (
-                  <span className="px-3 py-1 bg-[#8B7355] text-white text-[10px] tracking-widest uppercase">{t("sale")}</span>
-                )}
-              </div>
             </div>
 
             <div className="p-6 sm:p-8 flex flex-col">
@@ -307,11 +339,19 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
                   </button>
                 )}
 
-                {/* TODO: Implement Buy Now - navigate to /checkout with the selected variant */}
                 <Link
-                  href={`/${locale}/checkout`}
+                  href={(() => {
+                    const p = new URLSearchParams();
+                    if (selectedVariant) p.set("variant", selectedVariant.id);
+                    const qs = p.toString();
+                    return `/${locale}/checkout${qs ? `?${qs}` : ""}`;
+                  })()}
                   onClick={onClose}
-                  className="block w-full py-3.5 text-center text-xs tracking-widest uppercase font-light border border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-all duration-300"
+                  className={`block w-full py-3.5 text-center text-xs tracking-widest uppercase font-light border transition-all duration-300 ${
+                    !selectedVariant || isOutOfStock
+                      ? "border-[#E8E4DF] text-[#C4C4C4] cursor-not-allowed pointer-events-none"
+                      : "border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white"
+                  }`}
                 >
                   {t("buyNow")}
                 </Link>

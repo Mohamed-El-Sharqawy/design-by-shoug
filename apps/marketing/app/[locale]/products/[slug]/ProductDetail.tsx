@@ -219,6 +219,9 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
 
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-white min-h-screen max-sm:pb-24">
+      {images.map((img, idx) => (
+        <link key={img.id} rel="prefetch" as="image" href={img.url} />
+      ))}
       <CartAddedPopup item={popupItem} open={popupOpen} onClose={() => setPopupOpen(false)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <a
@@ -291,6 +294,7 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
                       fill
                       className="object-cover"
                       sizes="80px"
+                      priority={idx < 4}
                     />
                   </button>
                 ))}

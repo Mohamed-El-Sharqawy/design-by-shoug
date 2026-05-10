@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NotFoundError, ValidationError } from "@/lib/errors";
-import { createCheckoutSession, retrievePaymentIntent } from "@/lib/stripe";
-import { sendOrderConfirmationEmail } from "@/lib/mail";
+import { createCheckoutSession, retrievePaymentIntent } from "@/lib/ziina";
+import { sendOrderConfirmationEmail, sendOwnerOrderNotification } from "@/lib/mail";
 import { CartService } from "@/modules/cart/service";
 import { CouponService } from "@/modules/coupons/service";
 import type {
@@ -270,26 +270,47 @@ export abstract class OrderService {
         discountAmount: discount,
         shippingCost,
       });
-      checkoutUrl = session.url;
+      checkoutUrl = session.redirect_url;
     }
 
     const customerEmail = input.email || (userId ? (await prisma.user.findUnique({ where: { id: userId } }))?.email : null);
 
-    if (customerEmail) {
-      try {
-        await sendOrderConfirmationEmail(customerEmail, order.orderNumber, {
-          items: order.items.map((item) => ({
-            name: item.productNameEn,
-            quantity: item.quantity,
-            price: `AED ${Number(item.totalPrice).toFixed(2)}`,
-          })),
-          subtotal: `AED ${Number(order.subtotal).toFixed(2)}`,
-          shipping: `AED ${Number(order.shippingCost).toFixed(2)}`,
-          total: `AED ${Number(order.total).toFixed(2)}`,
-        });
-      } catch (err) {
-        console.error("Failed to send order confirmation email:", err);
+    const emailDetails = {
+      items: orderItemsData.map((item) => ({
+        name: item.productNameEn,
+        size: item.variantDetails,
+        quantity: item.quantity,
+        unitPrice: `AED ${Number(item.unitPrice).toFixed(2)}`,
+        totalPrice: `AED ${Number(item.totalPrice).toFixed(2)}`,
+        image: item.image,
+      })),
+      subtotal: `AED ${Number(order.subtotal).toFixed(2)}`,
+      shipping: `AED ${Number(order.shippingCost).toFixed(2)}`,
+      discount: `AED ${Number(order.discount).toFixed(2)}`,
+      total: `AED ${Number(order.total).toFixed(2)}`,
+      paymentMethod: input.paymentMethod === "CASH_ON_DELIVERY" ? "Cash on Delivery" : "Credit Card (Ziina)",
+      address: order.address
+        ? {
+            fullName: order.address.fullName,
+            phone: order.address.phone,
+            street: order.address.street,
+            building: order.address.building,
+            apartment: order.address.apartment,
+            district: order.address.district,
+            city: order.address.city,
+            country: order.address.country,
+          }
+        : undefined,
+      customerNotes: input.notesCustomer || null,
+    };
+
+    try {
+      if (customerEmail) {
+        await sendOrderConfirmationEmail(customerEmail, order.orderNumber, emailDetails);
       }
+      await sendOwnerOrderNotification(order.orderNumber, emailDetails);
+    } catch (err) {
+      console.error("Failed to send order emails:", err);
     }
 
     return {
@@ -450,26 +471,50 @@ export abstract class OrderService {
         discountAmount: discount,
         shippingCost,
       });
-      checkoutUrl = session.url;
+      checkoutUrl = session.redirect_url;
     }
 
     const customerEmail = input.email || (userId ? (await prisma.user.findUnique({ where: { id: userId } }))?.email : null);
 
-    if (customerEmail) {
-      try {
-        await sendOrderConfirmationEmail(customerEmail, order.orderNumber, {
-          items: order.items.map((item) => ({
-            name: item.productNameEn,
-            quantity: item.quantity,
-            price: `AED ${Number(item.totalPrice).toFixed(2)}`,
-          })),
-          subtotal: `AED ${Number(order.subtotal).toFixed(2)}`,
-          shipping: `AED ${Number(order.shippingCost).toFixed(2)}`,
-          total: `AED ${Number(order.total).toFixed(2)}`,
-        });
-      } catch (err) {
-        console.error("Failed to send order confirmation email:", err);
+    const variantDetails = `${variant.abayaLength?.labelEn || ""}${variant.color ? ` / ${variant.color.nameEn}` : ""}`;
+    const directItemPrimaryImage = variant.product.images?.[0]?.url || null;
+
+    const emailDetails = {
+      items: [{
+        name: variant.product.nameEn,
+        size: variantDetails,
+        quantity: input.quantity,
+        unitPrice: `AED ${unitPrice.toFixed(2)}`,
+        totalPrice: `AED ${subtotal.toFixed(2)}`,
+        image: directItemPrimaryImage,
+      }],
+      subtotal: `AED ${Number(order.subtotal).toFixed(2)}`,
+      shipping: `AED ${Number(order.shippingCost).toFixed(2)}`,
+      discount: `AED ${Number(order.discount).toFixed(2)}`,
+      total: `AED ${Number(order.total).toFixed(2)}`,
+      paymentMethod: input.paymentMethod === "CASH_ON_DELIVERY" ? "Cash on Delivery" : "Credit Card (Ziina)",
+      address: order.address
+        ? {
+            fullName: order.address.fullName,
+            phone: order.address.phone,
+            street: order.address.street,
+            building: order.address.building,
+            apartment: order.address.apartment,
+            district: order.address.district,
+            city: order.address.city,
+            country: order.address.country,
+          }
+        : undefined,
+      customerNotes: input.note || null,
+    };
+
+    try {
+      if (customerEmail) {
+        await sendOrderConfirmationEmail(customerEmail, order.orderNumber, emailDetails);
       }
+      await sendOwnerOrderNotification(order.orderNumber, emailDetails);
+    } catch (err) {
+      console.error("Failed to send order emails:", err);
     }
 
     return {
@@ -680,7 +725,7 @@ export abstract class OrderService {
   static async confirmPayment(orderId: string, paymentIntentId: string) {
     const paymentIntent = await retrievePaymentIntent(paymentIntentId);
 
-    if (paymentIntent.status !== "succeeded") {
+    if (paymentIntent.status !== "completed") {
       throw new ValidationError("Payment not completed");
     }
 

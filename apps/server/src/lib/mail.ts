@@ -1,25 +1,32 @@
 const MAILTRAP_API = "https://send.api.mailtrap.io/api/send";
 const MAILTRAP_TOKEN = process.env.MAILTRAP_TOKEN;
-const SENDER_EMAIL = process.env.MAILTRAP_SENDER_EMAIL || "hello@nabdalqalam.com";
+const SENDER_EMAIL = process.env.MAILTRAP_SENDER_EMAIL || "hello@designbyshoug.com";
 const SENDER_NAME = process.env.MAILTRAP_SENDER_NAME || "Design By Shoug";
-const OWNER_EMAIL = process.env.OWNER_EMAIL;
+const OWNER_EMAILS = (process.env.OWNER_EMAILS || "")
+  .split(",")
+  .map((e) => e.trim())
+  .filter(Boolean);
 
 interface EmailOptions {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   text?: string;
-  bccOwner?: boolean;
+  bcc?: string[];
 }
 
 export async function sendEmail(options: EmailOptions): Promise<void> {
+  const toArray = Array.isArray(options.to)
+    ? options.to.map((e) => ({ email: e }))
+    : [{ email: options.to }];
+
   const body: Record<string, unknown> = {
     from: { email: SENDER_EMAIL, name: SENDER_NAME },
-    to: [{ email: options.to }],
+    to: toArray,
     subject: options.subject,
     html: options.html,
     ...(options.text && { text: options.text }),
-    ...(options.bccOwner && OWNER_EMAIL && { bcc: [{ email: OWNER_EMAIL }] }),
+    ...(options.bcc && options.bcc.length > 0 && { bcc: options.bcc.map((e) => ({ email: e })) }),
   };
 
   const res = await fetch(MAILTRAP_API, {
@@ -95,60 +102,171 @@ export async function sendOtpEmail(
   });
 }
 
-export async function sendOrderConfirmationEmail(
-  email: string,
-  orderNumber: string,
-  orderDetails: {
-    items: Array<{ name: string; quantity: number; price: string }>;
-    subtotal: string;
-    shipping: string;
-    total: string;
-  }
-): Promise<void> {
-  const itemsHtml = orderDetails.items
+export interface OrderItemDetail {
+  name: string;
+  size: string;
+  quantity: number;
+  unitPrice: string;
+  totalPrice: string;
+  image: string | null;
+}
+
+export interface OrderConfirmationDetails {
+  items: OrderItemDetail[];
+  subtotal: string;
+  shipping: string;
+  discount?: string;
+  total: string;
+  paymentMethod: string;
+  address?: {
+    fullName: string;
+    phone: string;
+    street: string;
+    building?: string | null;
+    apartment?: string | null;
+    district?: string | null;
+    city: string;
+    country: string;
+  };
+  customerNotes?: string | null;
+}
+
+function buildItemsHtml(items: OrderItemDetail[]): string {
+  return items
     .map(
       (item) => `
       <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; vertical-align: middle;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            ${item.image ? `<img src="${item.image}" alt="${item.name}" style="width: 50px; height: 60px; object-fit: cover; border-radius: 4px;" />` : '<div style="width: 50px; height: 60px; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">No img</div>'}
+            <div>
+              <div style="font-weight: 500;">${item.name}</div>
+              <div style="font-size: 12px; color: #666;">${item.size}</div>
+            </div>
+          </div>
+        </td>
         <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.price}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.unitPrice}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; font-weight: 500;">${item.totalPrice}</td>
       </tr>
     `
     )
     .join("");
+}
+
+function buildAddressHtml(address: NonNullable<OrderConfirmationDetails["address"]>): string {
+  const parts = [
+    address.street,
+    address.building,
+    address.apartment,
+    address.district,
+    `${address.city}, ${address.country}`,
+  ].filter(Boolean);
+
+  return `
+    <div style="margin: 16px 0; padding: 12px; background-color: #f9f9f9; border-radius: 4px;">
+      <p style="margin: 0 0 4px; font-weight: 500;">${address.fullName}</p>
+      <p style="margin: 0 0 4px; color: #666;">${address.phone}</p>
+      <p style="margin: 0; color: #666;">${parts.join(", ")}</p>
+    </div>
+  `;
+}
+
+export async function sendOrderConfirmationEmail(
+  email: string,
+  orderNumber: string,
+  orderDetails: OrderConfirmationDetails
+): Promise<void> {
+  const itemsHtml = buildItemsHtml(orderDetails.items);
 
   await sendEmail({
     to: email,
     subject: `Order Confirmation #${orderNumber} - DesignByShoug`,
-    bccOwner: true,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #333;">Thank You for Your Order!</h1>
         <p>Your order <strong>#${orderNumber}</strong> has been confirmed.</p>
-        
+
         <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
           <thead>
             <tr style="background-color: #f5f5f5;">
               <th style="padding: 12px 8px; text-align: left;">Item</th>
               <th style="padding: 12px 8px; text-align: center;">Qty</th>
               <th style="padding: 12px 8px; text-align: right;">Price</th>
+              <th style="padding: 12px 8px; text-align: right;">Total</th>
             </tr>
           </thead>
           <tbody>
             ${itemsHtml}
           </tbody>
         </table>
-        
+
         <div style="text-align: right; margin-top: 16px;">
           <p style="margin: 4px 0;">Subtotal: ${orderDetails.subtotal}</p>
+          ${orderDetails.discount && orderDetails.discount !== "AED 0.00" ? `<p style="margin: 4px 0; color: #8B7355;">Discount: -${orderDetails.discount}</p>` : ""}
           <p style="margin: 4px 0;">Shipping: ${orderDetails.shipping}</p>
           <p style="margin: 4px 0; font-weight: bold; font-size: 18px;">Total: ${orderDetails.total}</p>
         </div>
-        
+
         <p style="color: #666; margin-top: 24px;">We'll send you another email when your order ships.</p>
+
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee;">
+          <p style="color: #999; font-size: 13px; margin: 0 0 4px;">Need help? Contact us:</p>
+          <p style="color: #555; font-size: 13px; margin: 0 0 2px;">Email: <a href="mailto:ddesignbyshoug@gmail.com" style="color: #8B7355;">ddesignbyshoug@gmail.com</a></p>
+          <p style="color: #555; font-size: 13px; margin: 0;">WhatsApp: <a href="https://wa.me/971507397759" style="color: #8B7355;">+971 50 739 7759</a></p>
+        </div>
       </div>
     `,
   });
 }
 
+export async function sendOwnerOrderNotification(
+  orderNumber: string,
+  orderDetails: OrderConfirmationDetails
+): Promise<void> {
+  if (OWNER_EMAILS.length === 0) return;
 
+  const itemsHtml = buildItemsHtml(orderDetails.items);
+  const addressHtml = orderDetails.address ? buildAddressHtml(orderDetails.address) : "";
+
+  await sendEmail({
+    to: OWNER_EMAILS,
+    subject: `New Order #${orderNumber} - DesignByShoug`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">New Order Received</h1>
+        <p>Order <strong>#${orderNumber}</strong></p>
+
+        <h3 style="color: #555; margin-top: 20px;">Customer Details</h3>
+        ${addressHtml}
+
+        <h3 style="color: #555; margin-top: 20px;">Payment Method</h3>
+        <p>${orderDetails.paymentMethod}</p>
+
+        ${orderDetails.customerNotes ? `<h3 style="color: #555; margin-top: 20px;">Customer Notes</h3><p style="background: #fffbe6; padding: 8px; border-radius: 4px;">${orderDetails.customerNotes}</p>` : ""}
+
+        <h3 style="color: #555; margin-top: 20px;">Items</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 12px 0;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="padding: 12px 8px; text-align: left;">Item</th>
+              <th style="padding: 12px 8px; text-align: center;">Qty</th>
+              <th style="padding: 12px 8px; text-align: right;">Price</th>
+              <th style="padding: 12px 8px; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        <div style="text-align: right; margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
+          <p style="margin: 4px 0;">Subtotal: ${orderDetails.subtotal}</p>
+          ${orderDetails.discount && orderDetails.discount !== "AED 0.00" ? `<p style="margin: 4px 0; color: #8B7355;">Discount: -${orderDetails.discount}</p>` : ""}
+          <p style="margin: 4px 0;">Shipping: ${orderDetails.shipping}</p>
+          <p style="margin: 4px 0; font-weight: bold; font-size: 18px;">Total: ${orderDetails.total}</p>
+        </div>
+      </div>
+    `,
+  });
+}

@@ -9,13 +9,14 @@ interface ProductCarouselProps {
   locale: string;
 }
 
-const DRAG_THRESHOLD = 5;
-
 export function ProductCarousel({ products }: ProductCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const didDrag = useRef(false);
+  const startX = useRef(0);
+  const scrollStart = useRef(0);
+  const pointerDown = useRef(false);
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -36,16 +37,11 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
     };
   }, [products, checkScroll]);
 
-  const startX = useRef(0);
-  const scrollStart = useRef(0);
-  const pointerDown = useRef(false);
-
   const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return;
     const target = e.target as HTMLElement;
-    if (target.closest("button, a, [role='button']")) {
-      didDrag.current = false;
-      return;
-    }
+    if (target.closest("button, a, [role='button']")) return;
+    e.preventDefault();
     startX.current = e.clientX;
     scrollStart.current = scrollRef.current?.scrollLeft || 0;
     pointerDown.current = true;
@@ -56,7 +52,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
   const onPointerMove = (e: React.PointerEvent) => {
     if (!pointerDown.current) return;
     const dx = e.clientX - startX.current;
-    if (Math.abs(dx) > DRAG_THRESHOLD) didDrag.current = true;
+    if (Math.abs(dx) > 3) didDrag.current = true;
     const el = scrollRef.current;
     if (el) el.scrollLeft = scrollStart.current - dx;
   };
@@ -91,11 +87,10 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onClickCapture={onClickCapture}
-        className="flex gap-4 sm:gap-6 lg:gap-8 overflow-x-auto scroll-smooth pl-1 pr-1 py-2 select-none cursor-grab"
+        className="flex gap-4 sm:gap-6 lg:gap-8 overflow-x-auto pl-1 pr-1 py-2 select-none cursor-grab"
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
-          touchAction: "pan-y",
           WebkitOverflowScrolling: "touch",
         }}
       >
@@ -112,7 +107,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
       {canScrollLeft && (
         <button
           onClick={() => scrollByCard("left")}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-lg border border-[#E8E4DF] flex items-center justify-center hover:bg-white transition-colors opacity-0 group-hover/carousel:opacity-100 focus:opacity-100"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-lg border border-[#E8E4DF] flex items-center justify-center hover:bg-white transition-colors"
           aria-label="Scroll left"
         >
           <svg className="w-4 h-4 text-[#1A1A1A]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -123,7 +118,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
       {canScrollRight && (
         <button
           onClick={() => scrollByCard("right")}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-lg border border-[#E8E4DF] flex items-center justify-center hover:bg-white transition-colors opacity-0 group-hover/carousel:opacity-100 focus:opacity-100"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-lg border border-[#E8E4DF] flex items-center justify-center hover:bg-white transition-colors"
           aria-label="Scroll right"
         >
           <svg className="w-4 h-4 text-[#1A1A1A]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

@@ -13,34 +13,40 @@ interface BannerCarouselProps {
 export function BannerCarousel({ banners }: BannerCarouselProps) {
   const locale = useLocale();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const isTransitioning = useRef(false);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
-  const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
+  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentIndexRef = useRef(0);
 
   const minSwipeDistance = 50;
 
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
   const goToSlide = useCallback(
     (index: number) => {
-      if (isTransitioning) return;
-      setIsTransitioning(true);
+      if (isTransitioning.current) return;
+      isTransitioning.current = true;
       setCurrentIndex(index);
-      setTimeout(() => setIsTransitioning(false), 500);
+      setTimeout(() => {
+        isTransitioning.current = false;
+      }, 500);
     },
-    [isTransitioning]
+    []
   );
 
   const goToNext = useCallback(() => {
-    const nextIndex = (currentIndex + 1) % banners.length;
+    const nextIndex = (currentIndexRef.current + 1) % banners.length;
     goToSlide(nextIndex);
-  }, [currentIndex, banners.length, goToSlide]);
+  }, [banners.length, goToSlide]);
 
   const goToPrev = useCallback(() => {
-    const prevIndex = (currentIndex - 1 + banners.length) % banners.length;
+    const prevIndex = (currentIndexRef.current - 1 + banners.length) % banners.length;
     goToSlide(prevIndex);
-  }, [currentIndex, banners.length, goToSlide]);
+  }, [banners.length, goToSlide]);
 
-  // Auto-play
   useEffect(() => {
     if (banners.length <= 1) return;
 
@@ -55,18 +61,36 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
     };
   }, [banners.length, goToNext]);
 
-  // Touch handlers for swipe gestures
-  const onTouchStart = (e: React.TouchEvent) => {
+  const pauseAutoPlay = useCallback(() => {
+    if (autoPlayRef.current) {
+      clearInterval(autoPlayRef.current);
+      autoPlayRef.current = null;
+    }
+  }, []);
+
+  const resumeAutoPlay = useCallback(() => {
+    if (banners.length <= 1) return;
+    pauseAutoPlay();
+    autoPlayRef.current = setInterval(() => {
+      goToNext();
+    }, 5000);
+  }, [banners.length, goToNext, pauseAutoPlay]);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
     touchEndX.current = null;
     touchStartX.current = e.targetTouches[0]?.clientX ?? null;
-  };
+    pauseAutoPlay();
+  }, [pauseAutoPlay]);
 
-  const onTouchMove = (e: React.TouchEvent) => {
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
     touchEndX.current = e.targetTouches[0]?.clientX ?? null;
-  };
+  }, []);
 
-  const onTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
+  const onTouchEnd = useCallback(() => {
+    if (!touchStartX.current || !touchEndX.current) {
+      resumeAutoPlay();
+      return;
+    }
 
     const distance = touchStartX.current - touchEndX.current;
     const isLeftSwipe = distance > minSwipeDistance;
@@ -80,24 +104,28 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
 
     touchStartX.current = null;
     touchEndX.current = null;
-  };
+    resumeAutoPlay();
+  }, [goToNext, goToPrev, resumeAutoPlay]);
 
-  // Mouse drag handlers for desktop swipe
   const mouseStartX = useRef<number | null>(null);
   const isDragging = useRef(false);
 
-  const onMouseDown = (e: React.MouseEvent) => {
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
     mouseStartX.current = e.clientX;
     isDragging.current = true;
-  };
+    pauseAutoPlay();
+  }, [pauseAutoPlay]);
 
-  const onMouseMove = (e: React.MouseEvent) => {
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging.current) return;
     e.preventDefault();
-  };
+  }, []);
 
-  const onMouseUp = (e: React.MouseEvent) => {
-    if (!isDragging.current || mouseStartX.current === null) return;
+  const onMouseUp = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current || mouseStartX.current === null) {
+      resumeAutoPlay();
+      return;
+    }
 
     const distance = mouseStartX.current - e.clientX;
     const isLeftSwipe = distance > minSwipeDistance;
@@ -111,12 +139,13 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
 
     mouseStartX.current = null;
     isDragging.current = false;
-  };
+    resumeAutoPlay();
+  }, [goToNext, goToPrev, resumeAutoPlay]);
 
-  const onMouseLeave = () => {
+  const onMouseLeave = useCallback(() => {
     isDragging.current = false;
     mouseStartX.current = null;
-  };
+  }, []);
 
   const getButtonText = (banner: Banner) => {
     return locale === "ar" ? banner.buttonTextAr : banner.buttonTextEn;
@@ -126,7 +155,8 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
 
   return (
     <section
-      className="relative w-full h-[calc(100dvh-88px)] overflow-hidden bg-[#FAF9F7] select-none touch-pan-y"
+      className="relative w-full h-[calc(100dvh-88px)] overflow-hidden bg-[#FAF9F7] select-none"
+      style={{ touchAction: "pan-y" }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -136,7 +166,6 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
       onMouseLeave={onMouseLeave}
       onDragStart={(e) => e.preventDefault()}
     >
-      {/* All banner images - eagerly loaded */}
       {banners.map((banner, index) => (
         <div
           key={banner.id}
@@ -166,10 +195,8 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
             draggable={false}
           />
 
-          {/* Overlay gradient */}
           <div className="absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent" />
 
-          {/* Banner content */}
           {(getButtonText(banner) || banner.href) && (
             <div className="absolute inset-0 flex items-end justify-center pb-16 sm:pb-20 md:pb-24">
               {banner.href ? (
@@ -189,10 +216,8 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
         </div>
       ))}
 
-      {/* Navigation arrows */}
       {banners.length > 1 && (
         <>
-          {/* Previous arrow */}
           <button
             onClick={goToPrev}
             className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white/80 backdrop-blur-sm hover:bg-white transition-all duration-300 text-[#1A1A1A] border border-[#E8E4DF] group"
@@ -213,7 +238,6 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
             </svg>
           </button>
 
-          {/* Next arrow */}
           <button
             onClick={goToNext}
             className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white/80 backdrop-blur-sm hover:bg-white transition-all duration-300 text-[#1A1A1A] border border-[#E8E4DF] group"
@@ -236,7 +260,6 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
         </>
       )}
 
-      {/* Dots indicator */}
       {banners.length > 1 && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
           {banners.map((_, index) => (

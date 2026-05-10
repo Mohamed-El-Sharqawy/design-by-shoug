@@ -19,8 +19,9 @@ export function OrderConfirmationClient() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const sessionId = searchParams.get("session_id");
-    if (!sessionId) {
+    const paymentIntentId = searchParams.get("payment_intent_id");
+    const orderId = searchParams.get("order_id");
+    if (!paymentIntentId || !orderId) {
       setError(true);
       setLoading(false);
       return;
@@ -31,7 +32,7 @@ export function OrderConfirmationClient() {
       process.env.API_URL ||
       "http://localhost:3001";
 
-    fetch(`${API_URL}/orders/verify-session?session_id=${sessionId}`)
+    fetch(`${API_URL}/orders/verify-payment?payment_intent_id=${paymentIntentId}&order_id=${orderId}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {
