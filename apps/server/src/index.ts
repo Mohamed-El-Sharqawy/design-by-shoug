@@ -25,7 +25,7 @@ const app = new Elysia()
   .use(errorHandler)
   .use(
     cors({
-      origin: process.env.CORS_ORIGIN?.split(",") || ["https://designbyshoug.com", "https://dashboard.designbyshoug.com"],
+      origin: process.env.CORS_ORIGIN?.split(",") || ["https://designbyshoug.com", "https://www.designbyshoug.com", "https://dashboard.designbyshoug.com"],
       credentials: true,
     })
   )
