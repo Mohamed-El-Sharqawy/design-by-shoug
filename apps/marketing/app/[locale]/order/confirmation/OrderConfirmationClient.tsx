@@ -119,10 +119,22 @@ export function OrderConfirmationClient() {
         <p className="text-sm text-[#999] font-light mb-2">
           {t("orderPlacedDesc")}
         </p>
-        <p className="text-sm text-[#1A1A1A] font-light mb-8">
+        <p className="text-sm text-[#1A1A1A] font-light mb-2">
           {t("orderNumber")}:{" "}
           <span className="font-medium">#{order.orderNumber}</span>
         </p>
+        <div className="my-6 pt-4 border-t border-[#E8E4DF]">
+          <p className="text-xs text-[#999] font-light mb-1">
+            {locale === "ar" ? "لم تتلقى البريد الإلكتروني؟ تحقق من البريد المزعج أو" : "Didn't receive the email? Check your spam folder or"}
+            {" "}
+            <a href="mailto:ddesignbyshoug@gmail.com" className="text-[#8B7355] hover:underline">ddesignbyshoug@gmail.com</a>
+          </p>
+          <p className="text-xs text-[#999] font-light">
+            {locale === "ar" ? "للدعم والشكاوى:" : "Support & complaints:"}
+            {" "}
+            <a href="https://wa.me/971507397759" className="text-[#8B7355] hover:underline" dir="ltr">+971 50 739 7759</a>
+          </p>
+        </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href={`/${locale}/collections/all`}

@@ -210,8 +210,9 @@ export async function sendOrderConfirmationEmail(
 
         <p style="color: #666; margin-top: 24px;">We'll send you another email when your order ships.</p>
 
-        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee;">
-          <p style="color: #999; font-size: 13px; margin: 0 0 4px;">Need help? Contact us:</p>
+        <div style="margin-top: 24px; padding: 12px; background: #fafafa; border-radius: 4px; border: 1px solid #eee;">
+          <p style="color: #999; font-size: 12px; margin: 0 0 6px;">Our emails come from <strong style="color: #555;">ddesignbyshoug@gmail.com</strong> — please add us to your contacts and check your spam/junk folder if you don't see our emails.</p>
+          <p style="color: #999; font-size: 12px; margin: 0 0 4px;">Need help? Contact us:</p>
           <p style="color: #555; font-size: 13px; margin: 0 0 2px;">Email: <a href="mailto:ddesignbyshoug@gmail.com" style="color: #8B7355;">ddesignbyshoug@gmail.com</a></p>
           <p style="color: #555; font-size: 13px; margin: 0;">WhatsApp: <a href="https://wa.me/971507397759" style="color: #8B7355;">+971 50 739 7759</a></p>
         </div>
