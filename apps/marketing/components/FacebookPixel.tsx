@@ -45,14 +45,28 @@ export function FacebookPixel() {
   );
 }
 
+const dedupCache = new Map<string, number>();
+const DEDUP_WINDOW_MS = 1000;
+
+function isDuplicate(event: string, params?: Record<string, unknown>): boolean {
+  const key = `${event}:${JSON.stringify(params ?? {})}`;
+  const now = Date.now();
+  const last = dedupCache.get(key);
+  if (last && now - last < DEDUP_WINDOW_MS) return true;
+  dedupCache.set(key, now);
+  return false;
+}
+
 export function trackEvent(event: string, params?: Record<string, unknown>) {
   if (typeof window !== "undefined" && window.fbq) {
+    if (isDuplicate(event, params)) return;
     window.fbq("track", event, params);
   }
 }
 
 export function trackCustomEvent(event: string, params?: Record<string, unknown>) {
   if (typeof window !== "undefined" && window.fbq) {
+    if (isDuplicate(event, params)) return;
     window.fbq("trackCustom", event, params);
   }
 }

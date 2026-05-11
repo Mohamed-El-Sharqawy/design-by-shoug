@@ -160,11 +160,11 @@ export default async function LocaleLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Suspense>
           <FacebookPixel />
         </Suspense>
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <NextIntlClientProvider
           locale={locale}
           timeZone="Asia/Dubai"
