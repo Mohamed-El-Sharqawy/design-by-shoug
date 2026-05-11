@@ -42,6 +42,22 @@ export async function generateMetadata({
   return {
     title: `${title} | Design By Shoug`,
     description: description || undefined,
+    openGraph: {
+      title: `${title} | Design By Shoug`,
+      description: description || undefined,
+      images: product.images?.[0] || "",
+      url: `https://designbyshoug.com/${locale}/products/${product.slug}`,
+      type: "website",
+    },
+    twitter: {
+      title: `${title} | Design By Shoug`,
+      description: description || undefined,
+      images: product.images?.[0] || "",
+      card: "summary_large_image",
+    },
+    alternates: {
+      canonical: `https://designbyshoug.com/${locale}/products/${product.slug}`,
+    },
   };
 }
 
