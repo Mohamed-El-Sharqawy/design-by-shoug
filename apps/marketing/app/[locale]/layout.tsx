@@ -13,7 +13,6 @@ import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { Providers } from "@/components/Providers";
 import "../globals.css";
 import { setRequestLocale } from "next-intl/server";
-import { getCartSSR } from "@/lib/cart-ssr";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -69,7 +68,7 @@ export default async function LocaleLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }>) {
-  const { locale } = await params;
+  const locale = (await params).locale;
 
   if (!hasLocale(routing.locales, locale)) {
     notFound();
@@ -78,7 +77,6 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   const dir = locale === "ar" ? "rtl" : "ltr";
-  const initialCartData = await getCartSSR();
 
   return (
     <html lang={locale} dir={dir}>
@@ -86,8 +84,11 @@ export default async function LocaleLayout({
         <script dangerouslySetInnerHTML={{ __html: "if(history.scrollRestoration)history.scrollRestoration='manual'" }} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <NextIntlClientProvider>
-          <Providers initialCartData={initialCartData}>
+        <NextIntlClientProvider
+          locale={locale}
+          timeZone="Asia/Dubai"
+        >
+          <Providers>
             <AuthHydrator />
             <EmailVerificationBanner locale={locale} />
             <Header />

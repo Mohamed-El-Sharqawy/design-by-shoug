@@ -189,7 +189,7 @@ export function CollectionProductBrowser({
   const productFilters: Omit<ProductFilters, "page" | "limit"> = {
     isActive: true,
     collectionId: selectedCollectionId || undefined,
-    isFeatured: initialIsFeatured,
+    isFeatured: initialIsFeatured || undefined,
     sortBy,
     sortOrder,
     minPrice: appliedMinPrice || undefined,

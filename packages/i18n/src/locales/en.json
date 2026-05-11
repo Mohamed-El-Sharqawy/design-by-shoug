@@ -450,7 +450,9 @@
       "s3Title": "Exchange Process",
       "s3Body": "If you wish to exchange an item for a different size or color, please contact us within 7 days of receiving your order. Exchanges are subject to availability.",
       "s4Title": "Damaged or Defective Items",
-      "s4Body": "If you receive a damaged or defective item, please contact us within 48 hours of delivery with photos of the issue. We will arrange a replacement at no additional cost."
+      "s4Body": "If you receive a damaged or defective item, please contact us within 48 hours of delivery with photos of the issue. We will arrange a replacement at no additional cost.",
+      "s5Title": "Contact Us",
+      "s5Body": "If you have any questions about our exchange policy, please contact our customer service team via email or WhatsApp. We are happy to assist you with any concerns."
     },
     "shipping": {
       "title": "Shipping Policy",

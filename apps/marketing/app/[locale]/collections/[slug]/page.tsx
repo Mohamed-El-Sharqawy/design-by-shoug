@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import type { Collection, Product } from "@repo/types";
 import { CollectionProductBrowser } from "./CollectionProductBrowser";
+import { routing } from "@/i18n/routing";
 
 const API_URL = process.env.API_URL || "http://localhost:3001";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://designbyshoug.com";
@@ -11,30 +13,34 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://designbyshoug.com"
 type SortOption = "newest" | "price_asc" | "price_desc" | "best_selling" | "name_asc";
 const VALID_SORTS: SortOption[] = ["newest", "price_asc", "price_desc", "best_selling", "name_asc"];
 
+export const revalidate = 900;
+export const dynamicParams = true;
+
+const VIRTUAL_SLUGS = ["all", "featured"];
+
 export async function generateStaticParams() {
   try {
-    const res = await fetch(`${API_URL}/collections`);
-    if (!res.ok) return [];
+    const res = await fetch(`${API_URL}/collections`, {
+      cache: "force-cache",
+    });
+    if (!res.ok) {
+      return routing.locales.flatMap((locale) =>
+        VIRTUAL_SLUGS.map((slug) => ({ locale, slug }))
+      );
+    }
     const data = await res.json();
-    const slugs: string[] = (data.data || []).map((c: { slug: string }) => c.slug);
-    return [...slugs.map((slug) => ({ slug })), { slug: "all" }, { slug: "featured" }];
-  } catch {
-    return [{ slug: "all" }, { slug: "featured" }];
-  }
-}
+    const collections: { slug: string; isActive: boolean }[] = data.data || [];
+    const dbSlugs = collections
+      .filter((c) => c.slug && c.isActive)
+      .map((c) => c.slug);
 
-function buildSortParams(s: SortOption): { sortBy: string; sortOrder: string } {
-  switch (s) {
-    case "newest":
-      return { sortBy: "createdAt", sortOrder: "desc" };
-    case "price_asc":
-      return { sortBy: "price", sortOrder: "asc" };
-    case "price_desc":
-      return { sortBy: "price", sortOrder: "desc" };
-    case "best_selling":
-      return { sortBy: "soldCount", sortOrder: "desc" };
-    case "name_asc":
-      return { sortBy: "name", sortOrder: "asc" };
+    return routing.locales.flatMap((locale) =>
+      [...dbSlugs, ...VIRTUAL_SLUGS].map((slug) => ({ locale, slug }))
+    );
+  } catch {
+    return routing.locales.flatMap((locale) =>
+      VIRTUAL_SLUGS.map((slug) => ({ locale, slug }))
+    );
   }
 }
 
@@ -64,16 +70,29 @@ async function getCollection(slug: string) {
   }
 }
 
-interface ProductFilters {
+function buildSortParams(s: SortOption): { sortBy: string; sortOrder: string } {
+  switch (s) {
+    case "newest":
+      return { sortBy: "createdAt", sortOrder: "desc" };
+    case "price_asc":
+      return { sortBy: "price", sortOrder: "asc" };
+    case "price_desc":
+      return { sortBy: "price", sortOrder: "desc" };
+    case "best_selling":
+      return { sortBy: "soldCount", sortOrder: "desc" };
+    case "name_asc":
+      return { sortBy: "name", sortOrder: "asc" };
+  }
+}
+
+async function getFilteredProducts(filters: {
   collectionId?: string;
   isFeatured?: boolean;
   sort: SortOption;
   minPrice?: string;
   maxPrice?: string;
   page: number;
-}
-
-async function getFilteredProducts(filters: ProductFilters): Promise<{ products: Product[]; total: number }> {
+}): Promise<{ products: Product[]; total: number }> {
   try {
     const params = new URLSearchParams({ isActive: "true", limit: "20" });
     if (filters.collectionId) params.set("collectionId", filters.collectionId);
@@ -96,20 +115,24 @@ async function getFilteredProducts(filters: ProductFilters): Promise<{ products:
   }
 }
 
-function resolveServerFilters(
+function resolveFilters(
   searchParams: Record<string, string | string[] | undefined>,
   allCollections: Collection[],
-  initialCollectionId?: string
+  initialCollectionId?: string,
+  initialIsFeatured?: boolean,
 ) {
   const urlSort = typeof searchParams.sort === "string" ? searchParams.sort : undefined;
   const sort: SortOption = VALID_SORTS.includes(urlSort as SortOption) ? (urlSort as SortOption) : "newest";
 
   const urlCollection = typeof searchParams.collection === "string" ? searchParams.collection : undefined;
   let collectionId: string | undefined;
+  let isFeatured = initialIsFeatured;
+
   if (!urlCollection) {
     collectionId = initialCollectionId;
   } else if (urlCollection === "all") {
     collectionId = undefined;
+    isFeatured = undefined;
   } else {
     const found = allCollections.find((c) => c.slug === urlCollection);
     collectionId = found?.id;
@@ -118,14 +141,10 @@ function resolveServerFilters(
   const minPrice = typeof searchParams.minPrice === "string" ? searchParams.minPrice : undefined;
   const maxPrice = typeof searchParams.maxPrice === "string" ? searchParams.maxPrice : undefined;
   const page = typeof searchParams.page === "string" ? parseInt(searchParams.page) || 1 : 1;
-  const isFeatured = searchParams.featured === "true" ? true : undefined;
 
   return { collectionId, isFeatured, sort, minPrice, maxPrice, page };
 }
 
-// ─── SEO helpers ──────────────────────────────────────────────────────────────
-
-/** Brand-voice defaults for special virtual slugs */
 const SPECIAL_SLUG_META: Record<
   string,
   Record<"en" | "ar", { title: string; description: string }>
@@ -156,33 +175,21 @@ const SPECIAL_SLUG_META: Record<
   },
 };
 
-/**
- * Build a keyword-rich, on-brand default title (≤ 60 chars).
- * Pattern: "{Collection Name} Abayas in UAE | Design By Shoug"
- */
 function buildDefaultTitle(name: string, isAr: boolean): string {
   if (isAr) {
     return `عبايات ${name} في الإمارات | ديزاين باي شوق`;
   }
   const candidate = `${name} Abayas in UAE | Design By Shoug`;
-  // If it fits in 60 chars, great; otherwise fall back to shorter form
   return candidate.length <= 60 ? candidate : `${name} | Design By Shoug`;
 }
 
-/**
- * Build a benefit-driven default description (120–155 chars).
- * Incorporates collection name + brand differentiators.
- */
 function buildDefaultDescription(name: string, isAr: boolean): string {
   if (isAr) {
     return `تصفحي مجموعة ${name} من ديزاين باي شوق — عبايات فاخرة بتصاميم عصرية وخامات عالية الجودة، مثالية للمرأة الخليجية الأنيقة.`;
   }
-  // Fixed suffix is 121 chars, leaving 34 chars for the collection name before hitting 155
   const desc = `Shop ${name} by Design By Shoug — luxury abayas with premium fabrics and modern silhouettes, crafted for the discerning woman.`;
   return desc.length <= 155 ? desc : desc.slice(0, 152) + "...";
 }
-
-// ─── generateMetadata ─────────────────────────────────────────────────────────
 
 export async function generateMetadata({
   params,
@@ -192,17 +199,48 @@ export async function generateMetadata({
   const { locale, slug } = await params;
   const canonical = `${SITE_URL}/${locale}/collections/${slug}`;
   const isAr = locale === "ar";
-  const lang = isAr ? "ar" : "en";
+  const lang: "en" | "ar" = isAr ? "ar" : "en";
 
-  // Handle special virtual slugs (all, featured, …)
   if (SPECIAL_SLUG_META[slug]) {
     const m = SPECIAL_SLUG_META[slug][lang];
     return {
       title: m.title,
       description: m.description,
-      alternates: { canonical },
-      openGraph: { title: m.title, description: m.description, url: canonical },
-      twitter: { title: m.title, description: m.description },
+      authors: [{ name: "Design By Shoug" }],
+      publisher: "Design By Shoug",
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        },
+      },
+      openGraph: {
+        title: m.title,
+        description: m.description,
+        url: canonical,
+        siteName: "Design By Shoug",
+        type: "website",
+        locale: isAr ? "ar_AE" : "en_US",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: m.title,
+        description: m.description,
+      },
+      alternates: {
+        canonical,
+        languages: {
+          en: `${SITE_URL}/en/collections/${slug}`,
+          ar: `${SITE_URL}/ar/collections/${slug}`,
+          "en-US": `${SITE_URL}/en/collections/${slug}`,
+          "ar-SA": `${SITE_URL}/ar/collections/${slug}`,
+          "x-default": `${SITE_URL}/en/collections/${slug}`,
+        },
+      },
     };
   }
 
@@ -227,30 +265,56 @@ export async function generateMetadata({
     }
 
     const collectionName = isAr ? collection.nameAr : collection.nameEn;
-
-    // Priority: CMS meta field → SEO-crafted default (skip DB description — that's page content, not SEO copy)
     const metaTitle = isAr
       ? collection.metaTitleAr || buildDefaultTitle(collectionName, true)
       : collection.metaTitleEn || buildDefaultTitle(collectionName, false);
-
     const metaDesc = isAr
       ? collection.metaDescAr || buildDefaultDescription(collectionName, true)
       : collection.metaDescEn || buildDefaultDescription(collectionName, false);
 
+    const imageUrl = collection.imageUrl
+      ? (collection.imageUrl.startsWith("http") ? collection.imageUrl : `${SITE_URL}${collection.imageUrl}`)
+      : `${SITE_URL}/opengraph-image.png`;
+
     return {
       title: metaTitle,
       description: metaDesc,
-      alternates: { canonical },
+      authors: [{ name: "Design By Shoug" }],
+      publisher: "Design By Shoug",
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        },
+      },
       openGraph: {
         title: metaTitle,
         description: metaDesc,
         url: canonical,
-        images: collection.imageUrl ? [{ url: collection.imageUrl }] : undefined,
+        siteName: "Design By Shoug",
+        images: collection.imageUrl ? [{ url: imageUrl, width: 800, height: 800, alt: collectionName }] : undefined,
+        type: "website",
+        locale: isAr ? "ar_AE" : "en_US",
       },
       twitter: {
         card: "summary_large_image",
         title: metaTitle,
         description: metaDesc,
+        images: collection.imageUrl ? [imageUrl] : undefined,
+      },
+      alternates: {
+        canonical,
+        languages: {
+          en: `${SITE_URL}/en/collections/${slug}`,
+          ar: `${SITE_URL}/ar/collections/${slug}`,
+          "en-US": `${SITE_URL}/en/collections/${slug}`,
+          "ar-SA": `${SITE_URL}/ar/collections/${slug}`,
+          "x-default": `${SITE_URL}/en/collections/${slug}`,
+        },
       },
     };
   } catch {
@@ -265,46 +329,69 @@ export default async function CollectionDetailPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [{ slug }, sp, locale, t, allCollections] = await Promise.all([
+  const [{ locale, slug }, sp, t, allCollections] = await Promise.all([
     params,
     searchParams,
-    getLocale(),
     getTranslations("CollectionsPage"),
     getCollections(),
   ]);
 
   setRequestLocale(locale);
   const isAll = slug === "all";
+  const isFeatured = slug === "featured";
 
-  if (isAll) {
-    const filters = resolveServerFilters(sp, allCollections);
+  if (isAll || isFeatured) {
+    const filters = resolveFilters(sp, allCollections, undefined, isFeatured);
     const initial = await getFilteredProducts(filters);
-    const isFeaturedPage = filters.isFeatured;
+    const isFeaturedPage = isFeatured || filters.isFeatured;
+    const isAr = locale === "ar";
+
+    const structuredData = {
+      "@context": "https://schema.org/",
+      "@type": "CollectionPage",
+      name: isFeaturedPage
+        ? (isAr ? "عبايات مميزة | ديزاين باي شوق" : "Featured Abayas | Design By Shoug")
+        : (isAr ? "جميع العبايات | ديزاين باي شوق" : "All Abayas | Design By Shoug"),
+      url: `${SITE_URL}/${locale}/collections/${slug}`,
+      isPartOf: {
+        "@type": "WebSite",
+        name: "Design By Shoug",
+        url: SITE_URL,
+      },
+    };
 
     return (
-      <section className="py-16 sm:py-20 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 sm:mb-16">
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#1A1A1A] tracking-wide">
-              {isFeaturedPage ? t("featured") : t("allProducts")}
-            </h1>
-            <p className="mt-4 text-sm text-[#999] font-light tracking-wide">
-              {isFeaturedPage ? t("featuredDesc") : t("allProductsDesc")}
-            </p>
-            <div className="mt-6 w-16 h-px bg-[#8B7355]" />
-          </div>
-          <CollectionProductBrowser
-            initialProducts={initial.products}
-            initialTotal={initial.total}
-            allCollections={allCollections}
-            locale={locale}
-            isFeatured={filters.isFeatured}
-          />
-        </div>
-      </section>
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <Suspense>
+          <section className="py-16 sm:py-20 lg:py-24 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="mb-12 sm:mb-16">
+                <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#1A1A1A] tracking-wide">
+                  {isFeaturedPage ? t("featured") : t("allProducts")}
+                </h1>
+                <p className="mt-4 text-sm text-[#999] font-light tracking-wide">
+                  {isFeaturedPage ? t("featuredDesc") : t("allProductsDesc")}
+                </p>
+                <div className="mt-6 w-16 h-px bg-[#8B7355]" />
+              </div>
+              <CollectionProductBrowser
+                initialProducts={initial.products}
+                initialTotal={initial.total}
+                allCollections={allCollections}
+                locale={locale}
+                isFeatured={isFeaturedPage}
+              />
+            </div>
+          </section>
+        </Suspense>
+      </>
     );
   }
 
@@ -313,41 +400,67 @@ export default async function CollectionDetailPage({
 
   const name = locale === "ar" ? collection.nameAr : collection.nameEn;
   const description = locale === "ar" ? collection.descriptionAr : collection.descriptionEn;
-  const filters = resolveServerFilters(sp, allCollections, collection.id);
+  const filters = resolveFilters(sp, allCollections, collection.id);
   const initial = await getFilteredProducts(filters);
 
-  return (
-    <section className="py-16 sm:py-20 lg:py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-12 sm:mb-16">
-          <a
-            href={`/${locale}/collections`}
-            className="inline-flex items-center gap-2 text-xs tracking-widest uppercase text-[#8B7355] hover:text-[#7A6348] transition-colors font-light mb-6"
-          >
-            <svg className="w-3.5 h-3.5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            {t("allCollections")}
-          </a>
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#1A1A1A] tracking-wide">
-            {name}
-          </h1>
-          {description && (
-            <p className="mt-4 text-sm text-[#999] font-light tracking-wide max-w-2xl leading-relaxed">
-              {description}
-            </p>
-          )}
-          <div className="mt-6 w-16 h-px bg-[#8B7355]" />
-        </div>
+  const imageUrl = collection.imageUrl
+    ? (collection.imageUrl.startsWith("http") ? collection.imageUrl : `${SITE_URL}${collection.imageUrl}`)
+    : `${SITE_URL}/opengraph-image.png`;
 
-        <CollectionProductBrowser
-          initialProducts={initial.products}
-          initialTotal={initial.total}
-          collectionId={collection.id}
-          allCollections={allCollections}
-          locale={locale}
-        />
-      </div>
-    </section>
+  const structuredData = {
+    "@context": "https://schema.org/",
+    "@type": "CollectionPage",
+    name,
+    description: description || undefined,
+    image: imageUrl,
+    url: `${SITE_URL}/${locale}/collections/${slug}`,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Design By Shoug",
+      url: SITE_URL,
+    },
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <Suspense>
+        <section className="py-16 sm:py-20 lg:py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-12 sm:mb-16">
+              <a
+                href={`/${locale}/collections`}
+                className="inline-flex items-center gap-2 text-xs tracking-widest uppercase text-[#8B7355] hover:text-[#7A6348] transition-colors font-light mb-6"
+              >
+                <svg className="w-3.5 h-3.5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                {t("allCollections")}
+              </a>
+              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#1A1A1A] tracking-wide">
+                {name}
+              </h1>
+              {description && (
+                <p className="mt-4 text-sm text-[#999] font-light tracking-wide max-w-2xl leading-relaxed">
+                  {description}
+                </p>
+              )}
+              <div className="mt-6 w-16 h-px bg-[#8B7355]" />
+            </div>
+
+            <CollectionProductBrowser
+              initialProducts={initial.products}
+              initialTotal={initial.total}
+              collectionId={collection.id}
+              allCollections={allCollections}
+              locale={locale}
+            />
+          </div>
+        </section>
+      </Suspense>
+    </>
   );
 }
