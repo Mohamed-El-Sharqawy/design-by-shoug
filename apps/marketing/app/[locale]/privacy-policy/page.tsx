@@ -1,5 +1,23 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return buildMetadata({
+    locale,
+    path: "/privacy-policy",
+    titleEn: "Privacy Policy | Design By Shoug",
+    titleAr: "سياسة الخصوصية | ديزاين باي شوق",
+    descEn: "Read our privacy policy to understand how Design By Shoug collects, uses, and protects your personal information.",
+    descAr: "اقرئي سياسة الخصوصية لفهم كيفية جمع ديزاين باي شوق واستخدام وحماية معلوماتك الشخصية.",
+  });
+}
 
 export default async function PrivacyPolicyPage() {
   const locale = await getLocale();

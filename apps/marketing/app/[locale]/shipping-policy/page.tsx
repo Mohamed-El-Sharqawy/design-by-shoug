@@ -1,5 +1,23 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return buildMetadata({
+    locale,
+    path: "/shipping-policy",
+    titleEn: "Shipping Policy | Design By Shoug",
+    titleAr: "سياسة الشحن | ديزاين باي شوق",
+    descEn: "Learn about our shipping options, delivery times, and areas served across the UAE.",
+    descAr: "تعرفي على خيارات الشحن وأوقات التوصيل والمناطق المخدومة في الإمارات.",
+  });
+}
 
 export default async function ShippingPolicyPage() {
   const locale = await getLocale();

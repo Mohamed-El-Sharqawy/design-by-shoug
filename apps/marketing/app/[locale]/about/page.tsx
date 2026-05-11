@@ -1,6 +1,46 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
 import Image from "next/image";
+import type { Metadata } from "next";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://designbyshoug.com";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isAr = locale === "ar";
+  const canonical = `${SITE_URL}/${locale}/about`;
+
+  const title = isAr
+    ? "من نحن | ديزاين باي شوق"
+    : "About Us | Design By Shoug";
+  const description = isAr
+    ? "تعرفي على قصة ديزاين باي شوق — علامة أزياء عصرية تجمع بين الأناقة والتصاميم الفاخرة."
+    : "Discover the story behind Design By Shoug — a modern fashion brand blending elegance with luxury designs.";
+  const keywords = isAr
+    ? "من نحن, ديزاين باي شوق, قصة العلامة, أزياء الإمارات"
+    : "about us, Design By Shoug, our story, UAE fashion brand";
+
+  return {
+    title,
+    description,
+    keywords,
+    robots: { index: true, follow: true },
+    alternates: {
+      canonical,
+      languages: {
+        en: `${SITE_URL}/en/about`,
+        ar: `${SITE_URL}/ar/about`,
+        "x-default": `${SITE_URL}/en/about`,
+      },
+    },
+    openGraph: { title, description, url: canonical },
+    twitter: { title, description },
+  };
+}
 
 export default async function AboutPage() {
   const locale = await getLocale();

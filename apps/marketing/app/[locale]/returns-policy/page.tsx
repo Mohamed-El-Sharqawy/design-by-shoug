@@ -1,5 +1,23 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return buildMetadata({
+    locale,
+    path: "/returns-policy",
+    titleEn: "Returns & Exchange Policy | Design By Shoug",
+    titleAr: "سياسة الإرجاع والاستبدال | ديزاين باي شوق",
+    descEn: "Understand our returns and exchange policy for a smooth shopping experience at Design By Shoug.",
+    descAr: "تعرفي على سياسة الإرجاع والاستبدال لتجربة تسوق سلسة في ديزاين باي شوق.",
+  });
+}
 
 export default async function ReturnsPolicyPage() {
   const locale = await getLocale();

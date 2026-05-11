@@ -1,5 +1,23 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return buildMetadata({
+    locale,
+    path: "/terms-conditions",
+    titleEn: "Terms & Conditions | Design By Shoug",
+    titleAr: "الشروط والأحكام | ديزاين باي شوق",
+    descEn: "Review the terms and conditions for using the Design By Shoug website and purchasing our products.",
+    descAr: "راجعي الشروط والأحكام لاستخدام موقع ديزاين باي شوق وشراء منتجاتنا.",
+  });
+}
 
 export default async function TermsPage() {
   const locale = await getLocale();
