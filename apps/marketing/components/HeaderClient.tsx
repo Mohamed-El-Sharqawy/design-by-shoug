@@ -430,7 +430,7 @@ export function HeaderClient({ headerCollections }: HeaderClientProps) {
               <button
                 type="button"
                 onClick={toggleLocale}
-                className="text-xs tracking-wider text-[#8B7355] hover:text-[#7A6348] transition-colors font-light uppercase"
+                className="text-sm cursor-pointer tracking-wider text-[#8B7355] hover:text-[#7A6348] transition-colors font-light uppercase"
               >
                 {locale === "en" ? "عربي" : "EN"}
               </button>
@@ -576,7 +576,7 @@ export function HeaderClient({ headerCollections }: HeaderClientProps) {
               <button
                 type="button"
                 onClick={toggleLocale}
-                className="mt-6 text-xs tracking-wider text-[#8B7355] hover:text-[#7A6348] transition-colors font-light uppercase"
+                className="mt-6 text-sm tracking-wider cursor-pointer text-[#8B7355] hover:text-[#7A6348] transition-colors font-light uppercase"
               >
                 {locale === "en" ? "عربي" : "English"}
               </button>

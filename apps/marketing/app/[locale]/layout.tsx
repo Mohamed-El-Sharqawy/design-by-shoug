@@ -25,10 +25,38 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
 });
 
-export const metadata: Metadata = {
-  title: "Design By Shoug",
-  description: "Luxury Abaya Collection",
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const baseUrl = "http://localhost:3000";
+  const canonicalUrl = locale ? `${baseUrl}/${locale}` : baseUrl;
+  const description = locale === "ar" ? "انطلقت Design by Shoug من شغف بابتكار عبايات تبرز جمال الأزياء المحتشمة. كل قطعة في مجموعتنا مصممة بعناية فائقة لمزج التقاليد العريقة مع الجماليات المعاصرة، مما يمكن المرأة من التعبير عن شخصيتها برقي وثقة." : "Design by Shoug was born from a passion for creating abayas that celebrate the beauty of modest fashion. Each piece in our collection is thoughtfully designed to blend timeless tradition with contemporary aesthetics, empowering women to express their individuality with grace and confidence.";
+
+  return {
+    metadataBase: new URL(baseUrl),
+    title: "Design By Shoug",
+    description,
+    openGraph: {
+      title: "Design By Shoug",
+      description,
+      images: "/opengraph-image.png",
+      url: canonicalUrl,
+      type: "website",
+    },
+    twitter: {
+      title: "Design By Shoug",
+      description,
+      images: "/twitter-image.png",
+      card: "summary_large_image",
+    },
+    alternates: {
+      canonical: canonicalUrl,
+      languages: {
+        "en-US": "/en-US",
+        "ar-SA": "/ar-SA",
+      },
+    },
+  };
+}
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
