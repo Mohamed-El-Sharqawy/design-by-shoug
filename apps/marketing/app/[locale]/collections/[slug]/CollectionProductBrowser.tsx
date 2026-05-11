@@ -7,6 +7,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductGridSkeleton } from "@/components/Skeletons";
 import { useInfiniteProducts, type ProductFilters } from "@repo/api-client";
 import type { Collection, Product } from "@repo/types";
+import { trackViewContentCollection } from "@/lib/fb-helpers";
 
 type SortOption = "newest" | "price_asc" | "price_desc" | "best_selling" | "name_asc";
 const VALID_SORTS: SortOption[] = ["newest", "price_asc", "price_desc", "best_selling", "name_asc"];
@@ -81,6 +82,18 @@ export function CollectionProductBrowser({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const collection = initialCollectionId
+      ? allCollections.find((c) => c.id === initialCollectionId)
+      : null;
+    const name = collection
+      ? (isRtl ? collection.nameAr : collection.nameEn)
+      : initialIsFeatured
+        ? "Featured"
+        : "All Products";
+    trackViewContentCollection(name, initialProducts);
+  }, [initialCollectionId]);
 
   const collectionSlugToId = useCallback(
     (slug: string) => allCollections.find((c) => c.slug === slug)?.id ?? null,

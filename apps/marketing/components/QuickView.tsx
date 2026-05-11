@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Product, ProductVariant } from "@repo/types";
 import { useCartItems, useAddToCart } from "@/lib/cart-hooks";
 import { CartQuantityControl } from "@/components/CartQuantityControl";
+import { trackAddToCart } from "@/lib/fb-helpers";
 
 interface QuickViewProps {
   product: Product;
@@ -164,6 +165,7 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
       },
       1
     );
+    trackAddToCart(product, 1, selectedVariant.priceAdjustment);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };

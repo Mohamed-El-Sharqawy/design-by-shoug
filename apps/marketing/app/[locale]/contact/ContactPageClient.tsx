@@ -1,21 +1,50 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { trackLead } from "@/lib/fb-helpers";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:3001";
 
 export function ContactPageClient({ locale }: { locale: string }) {
   const t = useTranslations("Contact");
   const isRtl = locale === "ar";
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
+
+    const form = e.currentTarget;
+    const data = {
+      name: (form.elements.namedItem("name") as HTMLInputElement).value,
+      email: (form.elements.namedItem("email") as HTMLInputElement).value,
+      subject: (form.elements.namedItem("subject") as HTMLInputElement).value,
+      message: (form.elements.namedItem("message") as HTMLTextAreaElement).value,
+    };
+
+    try {
+      const res = await fetch(`${API_URL}/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setError(json.error?.message || json.message || "Failed to send message");
+        return;
+      }
+      trackLead("contact_form");
       setSent(true);
-    }, 1500);
+    } catch {
+      setError(isRtl ? "فشل إرسال الرسالة" : "Failed to send message");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -98,11 +127,17 @@ export function ContactPageClient({ locale }: { locale: string }) {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <h2 className="font-serif text-2xl text-[#1A1A1A] tracking-wide mb-6">{t("formTitle")}</h2>
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs tracking-wide">
+                    {error}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <input
                       required
                       type="text"
+                      name="name"
                       placeholder={t("namePlaceholder")}
                       className="w-full px-4 py-3 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A] transition-colors"
                     />
@@ -111,6 +146,7 @@ export function ContactPageClient({ locale }: { locale: string }) {
                     <input
                       required
                       type="email"
+                      name="email"
                       placeholder={t("emailPlaceholder")}
                       className="w-full px-4 py-3 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A] transition-colors"
                       dir="ltr"
@@ -120,11 +156,13 @@ export function ContactPageClient({ locale }: { locale: string }) {
                 <input
                   required
                   type="text"
+                  name="subject"
                   placeholder={t("subjectPlaceholder")}
                   className="w-full px-4 py-3 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A] transition-colors"
                 />
                 <textarea
                   required
+                  name="message"
                   rows={6}
                   placeholder={t("messagePlaceholder")}
                   className="w-full px-4 py-3 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A] transition-colors resize-none"

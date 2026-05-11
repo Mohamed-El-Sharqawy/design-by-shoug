@@ -1,6 +1,7 @@
 "use client";
 
 import { useCartItems, useUpdateCartQuantity } from "@/lib/cart-hooks";
+import { trackRemoveFromCart } from "@/lib/fb-helpers";
 
 interface CartQuantityControlProps {
   variantId: string;
@@ -17,7 +18,10 @@ export function CartQuantityControl({ variantId }: CartQuantityControlProps) {
     <div className="inline-flex items-center border border-[#1A1A1A]">
       <button
         type="button"
-        onClick={() => updateQty.mutate(variantId, cartItem.quantity - 1)}
+        onClick={() => {
+          if (cartItem.quantity - 1 <= 0) trackRemoveFromCart(cartItem);
+          updateQty.mutate(variantId, cartItem.quantity - 1);
+        }}
         className="w-10 h-10 flex items-center justify-center text-[#1A1A1A] hover:bg-[#FAF9F7] transition-colors text-sm"
       >
         −

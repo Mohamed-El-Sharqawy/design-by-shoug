@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { trackCompleteRegistration } from "@/lib/fb-helpers";
 
 export function RegisterPageClient({ locale }: { locale: string }) {
   const t = useTranslations("Auth");
@@ -47,6 +48,7 @@ export function RegisterPageClient({ locale }: { locale: string }) {
         lastName: lastName || undefined,
         phone: phone || undefined,
       });
+      trackCompleteRegistration(`${firstName} ${lastName}`.trim());
       router.push(`/${locale}/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err: any) {
       setError(err.message || (isRtl ? "فشل إنشاء الحساب" : "Registration failed"));

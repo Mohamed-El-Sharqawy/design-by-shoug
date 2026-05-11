@@ -9,6 +9,11 @@ import { useCartItems, useCartSubtotal, useClearCart, type CartItemLocal } from 
 import { useAuth } from "@/lib/auth";
 import { EmailVerificationModal } from "@/components/EmailVerificationModal";
 import {
+  trackInitiateCheckout,
+  trackInitiateCheckoutDirect,
+  trackPurchase,
+} from "@/lib/fb-helpers";
+import {
   useAddresses,
   useCreateAddress,
   useCalculateShipping,
@@ -97,6 +102,14 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
       if (def) setSelectedAddressId(def.id);
     }
   }, [addresses, selectedAddressId]);
+
+  useEffect(() => {
+    if (isBuyNow && directItem) {
+      trackInitiateCheckoutDirect(directItem.productId, directItem.unitPrice, directItem.quantity);
+    } else if (!isBuyNow && items.length > 0) {
+      trackInitiateCheckout(items, cartSubtotal);
+    }
+  }, []);
 
   const guestAddressReady = isGuest
     ? !!(newAddress.fullName && newAddress.phone && newAddress.country && newAddress.city && newAddress.street)
@@ -227,6 +240,12 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             window.location.href = json.data.checkoutUrl;
             return;
           }
+          trackPurchase(
+            json.data.order.orderNumber,
+            total,
+            [directItem.productId],
+            directItem.quantity,
+          );
           setOrderResult({
             orderNumber: json.data.order.orderNumber,
             orderId: json.data.order.id,
@@ -255,10 +274,22 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
         if (json.success && json.data?.order) {
           if (json.data.checkoutUrl) {
             clearCart.mutate();
+            trackPurchase(
+              json.data.order.orderNumber,
+              total,
+              items.map((i) => i.productId),
+              items.reduce((s, i) => s + i.quantity, 0),
+            );
             window.location.href = json.data.checkoutUrl;
             return;
           }
           clearCart.mutate();
+          trackPurchase(
+            json.data.order.orderNumber,
+            total,
+            items.map((i) => i.productId),
+            items.reduce((s, i) => s + i.quantity, 0),
+          );
           setOrderResult({
             orderNumber: json.data.order.orderNumber,
             orderId: json.data.order.id,

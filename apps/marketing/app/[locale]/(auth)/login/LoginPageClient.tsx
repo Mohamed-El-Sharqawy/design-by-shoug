@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { trackLogin } from "@/lib/fb-helpers";
 
 export function LoginPageClient({ locale }: { locale: string }) {
   const t = useTranslations("Auth");
@@ -27,6 +28,7 @@ export function LoginPageClient({ locale }: { locale: string }) {
 
     try {
       await login(email, password);
+      trackLogin();
       router.push(`/${locale}/account`);
     } catch (err) {
       setError((err instanceof Error) ? err.message : (isRtl ? "فشل تسجيل الدخول" : "Login failed"));

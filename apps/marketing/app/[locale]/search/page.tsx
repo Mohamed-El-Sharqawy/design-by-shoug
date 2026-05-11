@@ -4,9 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { useSearch } from "@repo/api-client";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGridSkeleton, CollectionGridSkeleton } from "@/components/Skeletons";
+import { trackSearch } from "@/lib/fb-helpers";
 
 export default function SearchPage() {
   const t = useTranslations("SearchPage");
@@ -16,6 +18,14 @@ export default function SearchPage() {
   const isRtl = locale === "ar";
 
   const { data: results, isLoading: loading } = useSearch(query);
+
+  const trackedQuery = useRef("");
+  useEffect(() => {
+    if (!loading && results && query && trackedQuery.current !== query) {
+      trackedQuery.current = query;
+      trackSearch(query, results.products.map((p) => p.id));
+    }
+  }, [loading, results, query]);
 
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-white min-h-screen">

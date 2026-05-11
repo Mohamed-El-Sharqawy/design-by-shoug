@@ -18,7 +18,7 @@ import { abayaLengthRoutes } from "@/modules/abaya-lengths";
 import { customerReviewRoutes } from "@/modules/customer-reviews";
 import { uploadRoutes } from "@/modules/upload";
 import { searchRoutes } from "@/modules/search";
-import { wishlistRoutes } from "@/modules/wishlist";
+import { contactRoutes } from "@/modules/contact";
 import { addressRoutes } from "@/modules/addresses";
 
 const app = new Elysia()
@@ -52,6 +52,7 @@ const app = new Elysia()
           { name: "AbayaLengths", description: "Abaya length management" },
           { name: "CustomerReviews", description: "Customer video reviews" },
           { name: "Search", description: "Search products and collections" },
+          { name: "Contact", description: "Contact form" },
         ],
       },
     })
@@ -71,7 +72,7 @@ const app = new Elysia()
   .use(customerReviewRoutes)
   .use(uploadRoutes)
   .use(searchRoutes)
-  .use(wishlistRoutes)
+  .use(contactRoutes)
   .use(addressRoutes)
   .listen(process.env.PORT || 3001);
 

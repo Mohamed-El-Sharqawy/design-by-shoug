@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
@@ -11,6 +12,7 @@ import { AuthHydrator } from "@/components/AuthHydrator";
 import { CartBottomBar } from "@/components/CartBottomBar";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { Providers } from "@/components/Providers";
+import { FacebookPixel } from "@/components/FacebookPixel";
 import "../globals.css";
 import { setRequestLocale } from "next-intl/server";
 
@@ -84,6 +86,9 @@ export default async function LocaleLayout({
         <script dangerouslySetInnerHTML={{ __html: "if(history.scrollRestoration)history.scrollRestoration='manual'" }} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <Suspense>
+          <FacebookPixel />
+        </Suspense>
         <NextIntlClientProvider
           locale={locale}
           timeZone="Asia/Dubai"

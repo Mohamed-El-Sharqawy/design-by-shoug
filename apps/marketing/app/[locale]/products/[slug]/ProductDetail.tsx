@@ -10,6 +10,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { CartAddedPopup } from "@/components/CartAddedPopup";
 import { CartQuantityControl } from "@/components/CartQuantityControl";
 import { useCartItems, useAddToCart, type CartItemLocal } from "@/lib/cart-hooks";
+import { trackViewContentProduct, trackAddToCart } from "@/lib/fb-helpers";
 
 function uniqueBy<T>(arr: T[], key: (item: T) => string): T[] {
   const seen = new Set<string>();
@@ -121,6 +122,7 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
     setSelectedColorId(init.colorId);
     setQuantity(init.qty);
     initialApplied.current = true;
+    trackViewContentProduct(product, locale);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-initialize when product changes
   }, [product.id]);
 
@@ -212,6 +214,7 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
       quantity,
     };
     addItem.mutate(cartItem, quantity);
+    trackAddToCart(product, quantity, selectedVariant.priceAdjustment);
     setPopupItem(cartItem);
     setPopupOpen(true);
   };

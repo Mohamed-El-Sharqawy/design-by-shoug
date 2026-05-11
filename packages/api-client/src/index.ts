@@ -16,5 +16,4 @@ export * from "./services/customer-reviews";
 export * from "./services/upload";
 export * from "./services/cart";
 export * from "./services/addresses";
-export * from "./services/wishlist";
 export * from "./services/search";

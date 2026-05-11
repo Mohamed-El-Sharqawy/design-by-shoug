@@ -6,11 +6,10 @@ import { useAuth } from "@/lib/auth";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ProfileTab } from "./tabs/ProfileTab";
 import { OrdersTab } from "./tabs/OrdersTab";
-import { WishlistTab } from "./tabs/WishlistTab";
 import { AddressesTab } from "./tabs/AddressesTab";
 
-type Tab = "profile" | "orders" | "wishlist" | "addresses";
-const VALID_TABS: Tab[] = ["profile", "orders", "wishlist", "addresses"];
+type Tab = "profile" | "orders" | "addresses";
+const VALID_TABS: Tab[] = ["profile", "orders", "addresses"];
 
 export function AccountPageClient({ locale }: { locale: string }) {
   const t = useTranslations("Account");
@@ -54,7 +53,6 @@ export function AccountPageClient({ locale }: { locale: string }) {
   const tabs: { key: Tab; label: string }[] = [
     { key: "profile", label: t("profile") },
     { key: "orders", label: t("orders") },
-    { key: "wishlist", label: t("wishlist") },
     { key: "addresses", label: t("addresses") },
   ];
 
@@ -88,7 +86,6 @@ export function AccountPageClient({ locale }: { locale: string }) {
 
         {activeTab === "profile" && <ProfileTab locale={locale} />}
         {activeTab === "orders" && <OrdersTab locale={locale} />}
-        {activeTab === "wishlist" && <WishlistTab locale={locale} />}
         {activeTab === "addresses" && <AddressesTab />}
       </div>
     </section>

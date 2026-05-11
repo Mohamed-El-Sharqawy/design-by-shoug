@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { trackPurchase } from "@/lib/fb-helpers";
 
 interface OrderData {
   orderNumber: string;
@@ -40,6 +41,12 @@ export function OrderConfirmationClient() {
             orderNumber: json.data.orderNumber,
             id: json.data.id,
           });
+          trackPurchase(
+            json.data.orderNumber,
+            json.data.total ?? 0,
+            json.data.items?.map((i: { productId: string }) => i.productId) ?? [json.data.id],
+            json.data.items?.reduce((s: number, i: { quantity: number }) => s + i.quantity, 0) ?? 1,
+          );
         } else {
           setError(true);
         }

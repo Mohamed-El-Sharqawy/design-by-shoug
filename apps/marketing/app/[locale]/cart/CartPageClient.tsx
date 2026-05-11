@@ -4,6 +4,7 @@ import { useCartItems, useCartCount, useCartSubtotal, useUpdateCartQuantity, use
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
+import { trackRemoveFromCart } from "@/lib/fb-helpers";
 
 interface CartPageClientProps {
   locale: string;
@@ -83,7 +84,11 @@ export function CartPageClient({ locale }: CartPageClientProps) {
                 formatPrice={formatPrice}
                 t={t}
                 onUpdateQuantity={(v, q) => updateQty.mutate(v, q)}
-                onRemove={(v) => remove.mutate(v)}
+                onRemove={(v) => {
+                  const item = items.find((i) => i.variantId === v);
+                  if (item) trackRemoveFromCart(item);
+                  remove.mutate(v);
+                }}
               />
             ))}
           </div>

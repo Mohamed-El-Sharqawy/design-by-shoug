@@ -391,14 +391,7 @@ export function HeaderClient({ headerCollections }: HeaderClientProps) {
                       >
                         {tAccount("orders")}
                       </Link>
-                      <Link
-                        href={`/${locale}/account?tab=wishlist`}
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-xs tracking-widest uppercase text-[#1A1A1A] hover:bg-[#FAF9F7] font-light transition-colors"
-                      >
-                        {tAccount("wishlist")}
-                      </Link>
-                      <Link
+                       <Link
                         href={`/${locale}/account?tab=addresses`}
                         onClick={() => setUserMenuOpen(false)}
                         className="block px-4 py-2 text-xs tracking-widest uppercase text-[#1A1A1A] hover:bg-[#FAF9F7] font-light transition-colors"
