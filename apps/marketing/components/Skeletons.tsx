@@ -59,6 +59,60 @@ export function SectionHeaderSkeleton({ align = "center" }: { align?: "center" |
   );
 }
 
+export function BannerSkeleton() {
+  return (
+    <section className="relative h-screen bg-[#E8E4DF] animate-pulse">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="h-12 bg-[#D5D0CB] rounded w-64 mx-auto" />
+          <div className="h-4 bg-[#D5D0CB] rounded w-48 mx-auto" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function ReviewsSkeleton() {
+  return (
+    <section className="py-16 sm:py-20 lg:py-24 bg-[#FAF9F7]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12 sm:mb-16 animate-pulse">
+          <div className="h-10 bg-[#E8E4DF] rounded w-48 mx-auto" />
+          <div className="mt-4 w-16 h-px bg-[#E8E4DF] mx-auto" />
+        </div>
+        <div className="flex gap-6 overflow-hidden">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="shrink-0 w-full sm:w-1/2 lg:w-1/3 space-y-4 animate-pulse">
+              <div className="aspect-square bg-[#E8E4DF] rounded-xl" />
+              <div className="h-4 bg-[#E8E4DF] rounded w-3/4" />
+              <div className="h-3 bg-[#E8E4DF] rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function InstagramSkeleton() {
+  return (
+    <section className="py-16 sm:py-20 lg:py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-start mb-12 sm:mb-16 animate-pulse">
+          <div className="h-10 bg-[#E8E4DF] rounded w-48" />
+          <div className="mt-4 w-16 h-px bg-[#E8E4DF]" />
+          <div className="mt-4 h-3 bg-[#E8E4DF] rounded w-32" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="aspect-3/4 bg-[#E8E4DF] rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function ProductDetailSkeleton() {
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-white">

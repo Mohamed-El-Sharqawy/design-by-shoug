@@ -47,3 +47,8 @@ enum ContentStatus {
   PUBLISHED
   ARCHIVED
 }
+
+enum ProductType {
+  ABAYA
+  SIMPLE
+}

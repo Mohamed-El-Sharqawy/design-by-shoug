@@ -112,7 +112,7 @@ export abstract class OrderService {
         variantId: item.variantId,
         productNameEn: item.variant.product.nameEn,
         productNameAr: item.variant.product.nameAr,
-        variantDetails: `${item.variant.abayaLength.labelEn}${item.variant.color ? ` / ${item.variant.color.nameEn}` : ""}`,
+        variantDetails: `${item.variant.abayaLength?.labelEn || ""}${item.variant.color ? ` / ${item.variant.color.nameEn}` : ""}`,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
@@ -417,7 +417,7 @@ export abstract class OrderService {
             variantId: input.variantId,
             productNameEn: variant.product.nameEn,
             productNameAr: variant.product.nameAr,
-            variantDetails: `${variant.abayaLength.labelEn}${variant.color ? ` / ${variant.color.nameEn}` : ""}`,
+            variantDetails: `${variant.abayaLength?.labelEn || ""}${variant.color ? ` / ${variant.color.nameEn}` : ""}`,
             quantity: input.quantity,
             unitPrice,
             totalPrice: subtotal,
@@ -750,6 +750,21 @@ export abstract class OrderService {
         paymentStatus: "PAID",
         status: "CONFIRMED",
       },
+    });
+  }
+
+  static async deleteOrder(id: string) {
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order) {
+      throw new NotFoundError("Order");
+    }
+
+    await prisma.order.delete({ where: { id } });
+  }
+
+  static async bulkDeleteOrders(ids: string[]) {
+    await prisma.order.deleteMany({
+      where: { id: { in: ids } },
     });
   }
 }

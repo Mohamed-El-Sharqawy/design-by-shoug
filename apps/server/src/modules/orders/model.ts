@@ -92,7 +92,12 @@ export const OrderIdParams = t.Object({
   id: t.String(),
 });
 
+export const BulkDeleteOrdersBody = t.Object({
+  ids: t.Array(t.String()),
+});
+
 export type CreateOrderInput = typeof CreateOrderBody.static;
 export type DirectPurchaseInput = typeof DirectPurchaseBody.static;
 export type UpdateOrderStatusInput = typeof UpdateOrderStatusBody.static;
 export type OrderQueryInput = typeof OrderQueryParams.static;
+export type BulkDeleteOrdersInput = typeof BulkDeleteOrdersBody.static;

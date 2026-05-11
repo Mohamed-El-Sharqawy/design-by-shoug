@@ -10,7 +10,6 @@ import { Footer } from "@/components/Footer";
 import { AuthHydrator } from "@/components/AuthHydrator";
 import { CartBottomBar } from "@/components/CartBottomBar";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
-import { PageTransitionLoader } from "@/components/layout/PageTransition";
 import { Providers } from "@/components/Providers";
 import "../globals.css";
 import { setRequestLocale } from "next-intl/server";
@@ -90,7 +89,6 @@ export default async function LocaleLayout({
         <NextIntlClientProvider>
           <Providers initialCartData={initialCartData}>
             <AuthHydrator />
-            <PageTransitionLoader />
             <EmailVerificationBanner locale={locale} />
             <Header />
             <main className="pb-16 sm:pb-0">{children}</main>

@@ -6,6 +6,7 @@ import {
   UpdateOrderStatusBody,
   OrderQueryParams,
   OrderIdParams,
+  BulkDeleteOrdersBody,
 } from "./model";
 import { authPlugin, requireAuth, requireAdmin, type AuthUser } from "@/modules/auth";
 import { retrievePaymentIntent } from "@/lib/ziina";
@@ -129,6 +130,22 @@ const adminOrderRoutes = new Elysia({ prefix: "/orders" })
       return { success: true, data: order };
     },
     { params: OrderIdParams, body: UpdateOrderStatusBody }
+  )
+  .delete(
+    "/:id",
+    async ({ params }) => {
+      await OrderService.deleteOrder(params.id);
+      return { success: true };
+    },
+    { params: OrderIdParams }
+  )
+  .post(
+    "/bulk-delete",
+    async ({ body }) => {
+      await OrderService.bulkDeleteOrders(body.ids);
+      return { success: true, deleted: body.ids.length };
+    },
+    { body: BulkDeleteOrdersBody }
   );
 
 export const orderRoutes = new Elysia()

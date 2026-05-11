@@ -2,11 +2,22 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import type { Product } from "@repo/types";
 import { ProductDetail } from "./ProductDetail";
 
 const API_URL = process.env.API_URL || "http://localhost:3001";
+
+export async function generateStaticParams() {
+  try {
+    const res = await fetch(`${API_URL}/products?isActive=true&limit=100`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const slugs: string[] = (data.data?.products || []).map((p: { slug: string }) => p.slug);
+    return slugs.map((slug) => ({ slug }));
+  } catch {
+    return [];
+  }
+}
 
 async function getProduct(slug: string): Promise<Product | null> {
   try {
@@ -95,9 +106,5 @@ export default async function ProductPage({
 
   const relatedProducts = await getRelatedProducts(product);
 
-  return (
-    <Suspense>
-      <ProductDetail product={product} locale={locale} relatedProducts={relatedProducts} />
-    </Suspense>
-  );
+  return <ProductDetail product={product} locale={locale} relatedProducts={relatedProducts} />;
 }

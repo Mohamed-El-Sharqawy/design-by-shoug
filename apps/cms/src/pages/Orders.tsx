@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useTranslation } from '@repo/i18n'
-import { useOrders, useOrder, useUpdateOrderStatus } from '@repo/api-client'
-import { Eye, ChevronDown } from 'lucide-react'
+import { useOrders, useOrder, useUpdateOrderStatus, useDeleteOrder, useBulkDeleteOrders } from '@repo/api-client'
+import { Eye, ChevronDown, Trash2, Loader2 } from 'lucide-react'
 import type { Order, OrderStatus, PaymentStatus } from '@repo/types'
 
 const statusColors: Record<OrderStatus, string> = {
@@ -43,35 +43,85 @@ export function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('')
   const { data, isLoading } = useOrders({ status: statusFilter || undefined })
   const updateStatus = useUpdateOrderStatus()
+  const deleteOrder = useDeleteOrder()
+  const bulkDeleteOrders = useBulkDeleteOrders()
 
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [confirmDelete, setConfirmDelete] = useState<{ type: 'single' | 'bulk'; id?: string } | null>(null)
+
+  const orders = data?.orders || []
+
+  const isAllSelected = orders.length > 0 && orders.every((o: Order) => selectedIds.has(o.id))
+  const isSomeSelected = selectedIds.size > 0 && !isAllSelected
+
+  const toggleAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(orders.map((o: Order) => o.id)))
+    }
+  }, [orders, isAllSelected])
+
+  const toggleOne = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }, [])
 
   const handleStatusChange = async (orderId: string, data: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => {
     await updateStatus.mutateAsync({ id: orderId, data })
+  }
+
+  const handleDeleteSingle = async (id: string) => {
+    await deleteOrder.mutateAsync(id)
+    setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n })
+    setConfirmDelete(null)
+  }
+
+  const handleBulkDelete = async () => {
+    await bulkDeleteOrders.mutateAsync(Array.from(selectedIds))
+    setSelectedIds(new Set())
+    setConfirmDelete(null)
   }
 
   if (isLoading) {
     return <div className="text-center py-8">{t('common.loading')}</div>
   }
 
-  const orders = data?.orders || []
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-slate-900">{t('orders.title')}</h1>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}
-          className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none"
-        >
-          <option value="">{t('orders.allStatuses')}</option>
-          {statusOptions.map((status) => (
-            <option key={status} value={status}>
-              {t(`orders.${status.toLowerCase()}`)}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-3">
+          {selectedIds.size > 0 && (
+            <button
+              onClick={() => setConfirmDelete({ type: 'bulk' })}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete ({selectedIds.size})
+            </button>
+          )}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}
+            className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none"
+          >
+            <option value="">{t('orders.allStatuses')}</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {t(`orders.${status.toLowerCase()}`)}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
@@ -80,6 +130,15 @@ export function OrdersPage() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
+                  <th className="text-left px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      ref={(el) => { if (el) el.indeterminate = isSomeSelected }}
+                      onChange={toggleAll}
+                      className="w-4 h-4 rounded border-slate-300 cursor-pointer"
+                    />
+                  </th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">
                     {t('orders.orderNumber')}
                   </th>
@@ -105,7 +164,15 @@ export function OrdersPage() {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {orders.map((order: Order) => (
-                  <tr key={order.id} className="hover:bg-slate-50">
+                  <tr key={order.id} className={`hover:bg-slate-50 ${selectedIds.has(order.id) ? 'bg-red-50/50' : ''}`}>
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(order.id)}
+                        onChange={() => toggleOne(order.id)}
+                        className="w-4 h-4 rounded border-slate-300 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-4 py-3 font-medium text-slate-900">
                       #{order.orderNumber}
                     </td>
@@ -147,12 +214,20 @@ export function OrdersPage() {
                       {new Date(order.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => setSelectedOrderId(order.id)}
-                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                      >
-                        <Eye className="w-4 h-4 text-slate-600" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setSelectedOrderId(order.id)}
+                          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          <Eye className="w-4 h-4 text-slate-600" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete({ type: 'single', id: order.id })}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -170,6 +245,35 @@ export function OrdersPage() {
           onClose={() => setSelectedOrderId(null)}
           onStatusChange={handleStatusChange}
         />
+      )}
+
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Delete Order{confirmDelete.type === 'bulk' ? 's' : ''}?</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              {confirmDelete.type === 'bulk'
+                ? `This will permanently delete ${selectedIds.size} selected orders. This action cannot be undone.`
+                : 'This will permanently delete this order. This action cannot be undone.'}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete.type === 'single' && confirmDelete.id ? () => handleDeleteSingle(confirmDelete.id!) : handleBulkDelete}
+                disabled={deleteOrder.isPending || bulkDeleteOrders.isPending}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {(deleteOrder.isPending || bulkDeleteOrders.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -38,6 +38,7 @@ export interface CreateProductDto {
   salePrice?: number | null;
   costPrice?: number | null;
   hasColorOptions?: boolean;
+  productType?: "ABAYA" | "SIMPLE";
   metaTitleEn?: string;
   metaTitleAr?: string;
   metaDescEn?: string;
@@ -60,7 +61,7 @@ export interface ProductImageDto {
 
 export interface VariantDto {
   sku: string;
-  abayaLengthId: string;
+  abayaLengthId?: string;
   colorId?: string;
   priceAdjustment?: number;
   stock?: number;
@@ -107,6 +108,7 @@ export interface CreateProductDto {
   salePrice?: number | null;
   costPrice?: number | null;
   hasColorOptions?: boolean;
+  productType?: "ABAYA" | "SIMPLE";
   metaTitleEn?: string;
   metaTitleAr?: string;
   metaDescEn?: string;

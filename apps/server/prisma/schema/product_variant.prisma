@@ -45,8 +45,8 @@ model ProductVariant {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  abayaLengthId String
-  abayaLength   AbayaLength @relation(fields: [abayaLengthId], references: [id])
+  abayaLengthId String?
+  abayaLength   AbayaLength? @relation(fields: [abayaLengthId], references: [id])
 
   colorId String?
   color   Color?  @relation(fields: [colorId], references: [id])

@@ -10,7 +10,7 @@ export const ProductImageInput = t.Object({
 
 export const VariantInput = t.Object({
   sku: t.String({ minLength: 1 }),
-  abayaLengthId: t.String(),
+  abayaLengthId: t.Optional(t.Nullable(t.String())),
   colorId: t.Optional(t.Nullable(t.String())),
   priceAdjustment: t.Optional(t.Number()),
   stock: t.Optional(t.Number({ minimum: 0 })),
@@ -29,6 +29,7 @@ export const CreateProductBody = t.Object({
   salePrice: t.Optional(t.Nullable(t.Number({ minimum: 0 }))),
   costPrice: t.Optional(t.Nullable(t.Number({ minimum: 0 }))),
   hasColorOptions: t.Optional(t.Boolean()),
+  productType: t.Optional(t.Union([t.Literal("ABAYA"), t.Literal("SIMPLE")])),
   metaTitleEn: t.Optional(t.String()),
   metaTitleAr: t.Optional(t.String()),
   metaDescEn: t.Optional(t.String()),
@@ -46,7 +47,7 @@ export const UpdateProductBody = t.Partial(CreateProductBody);
 export const CreateVariantBody = t.Object({
   sku: t.String({ minLength: 1 }),
   productId: t.String(),
-  abayaLengthId: t.String(),
+  abayaLengthId: t.Optional(t.Nullable(t.String())),
   colorId: t.Optional(t.Nullable(t.String())),
   priceAdjustment: t.Optional(t.Number()),
   stock: t.Optional(t.Number({ minimum: 0 })),

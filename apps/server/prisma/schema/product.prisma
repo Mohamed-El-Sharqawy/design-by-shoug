@@ -16,6 +16,8 @@ model Product {
 
   hasColorOptions Boolean @default(false)
 
+  productType ProductType @default(ABAYA)
+
   metaTitleEn String?
   metaTitleAr String?
   metaDescEn  String?

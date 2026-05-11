@@ -199,6 +199,8 @@ export abstract class ProductService {
   static async create(input: CreateProductInput) {
     const { collectionIds, images, variants, ...productData } = input;
 
+    const isSimple = productData.productType === 'SIMPLE';
+
     const product = await prisma.product.create({
       data: {
         ...productData,
@@ -213,18 +215,29 @@ export abstract class ProductService {
               })),
             }
           : undefined,
-        variants: variants
+        variants: isSimple && (!variants || variants.length === 0)
           ? {
-              create: variants.map((v) => ({
-                sku: v.sku,
-                abayaLengthId: v.abayaLengthId,
-                colorId: v.colorId,
-                priceAdjustment: v.priceAdjustment ?? 0,
-                stock: v.stock ?? 0,
+              create: [{
+                sku: productData.sku,
+                abayaLengthId: null,
+                colorId: null,
+                priceAdjustment: 0,
+                stock: 0,
                 isActive: true,
-              })),
+              }],
             }
-          : undefined,
+          : variants
+            ? {
+                create: variants.map((v) => ({
+                  sku: v.sku,
+                  abayaLengthId: v.abayaLengthId ?? null,
+                  colorId: v.colorId ?? null,
+                  priceAdjustment: v.priceAdjustment ?? 0,
+                  stock: v.stock ?? 0,
+                  isActive: true,
+                })),
+              }
+            : undefined,
         collections: collectionIds
           ? {
               create: collectionIds.map((collectionId, index) => ({
@@ -279,10 +292,10 @@ export abstract class ProductService {
         select: { id: true, abayaLengthId: true, colorId: true },
       });
 
-      const newKeys = new Set(variants.map((v) => `${v.abayaLengthId}:${v.colorId ?? "null"}`));
+      const newKeys = new Set(variants.map((v) => `${v.abayaLengthId ?? 'null'}:${v.colorId ?? "null"}`));
 
       const toDelete = existingVariants.filter(
-        (ev) => !newKeys.has(`${ev.abayaLengthId}:${ev.colorId ?? "null"}`)
+        (ev) => !newKeys.has(`${ev.abayaLengthId ?? 'null'}:${ev.colorId ?? "null"}`)
       );
 
       const hasOrderItems = await prisma.orderItem.findFirst({
@@ -303,7 +316,7 @@ export abstract class ProductService {
 
       for (const v of variants) {
         const existing = existingVariants.find(
-          (ev) => ev.abayaLengthId === v.abayaLengthId && (ev.colorId ?? null) === (v.colorId ?? null)
+          (ev) => (ev.abayaLengthId ?? null) === (v.abayaLengthId ?? null) && (ev.colorId ?? null) === (v.colorId ?? null)
         );
         if (existing) {
           await prisma.productVariant.update({
@@ -320,8 +333,8 @@ export abstract class ProductService {
             data: {
               productId: id,
               sku: v.sku,
-              abayaLengthId: v.abayaLengthId,
-              colorId: v.colorId,
+              abayaLengthId: v.abayaLengthId ?? null,
+              colorId: v.colorId ?? null,
               priceAdjustment: v.priceAdjustment ?? 0,
               stock: v.stock ?? 0,
               isActive: true,
@@ -384,7 +397,11 @@ export abstract class ProductService {
     }
 
     const variant = await prisma.productVariant.create({
-      data: input,
+      data: {
+        ...input,
+        abayaLengthId: input.abayaLengthId ?? null,
+        colorId: input.colorId ?? null,
+      },
       include: {
         abayaLength: true,
         color: true,
@@ -478,8 +495,8 @@ export abstract class ProductService {
         data: {
           sku: v.sku,
           productId,
-          abayaLengthId: v.abayaLengthId,
-          colorId: v.colorId,
+          abayaLengthId: v.abayaLengthId ?? null,
+          colorId: v.colorId ?? null,
           priceAdjustment: v.priceAdjustment ?? 0,
           stock: v.stock ?? 0,
           lowStockAlert: v.lowStockAlert ?? 5,

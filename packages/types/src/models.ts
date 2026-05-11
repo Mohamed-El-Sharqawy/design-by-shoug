@@ -6,6 +6,8 @@ export interface ProductCollection {
   collection?: Collection;
 }
 
+export type ProductType = "ABAYA" | "SIMPLE";
+
 export interface Product {
   id: string;
   sku: string;
@@ -20,6 +22,7 @@ export interface Product {
   salePrice: number | null;
   costPrice: number | null;
   hasColorOptions: boolean;
+  productType: ProductType;
   metaTitleEn: string | null;
   metaTitleAr: string | null;
   metaDescEn: string | null;
@@ -60,12 +63,12 @@ export interface ProductVariant {
   id: string;
   productId: string;
   sku: string;
-  abayaLengthId: string;
+  abayaLengthId: string | null;
   colorId: string | null;
   stock: number;
   priceAdjustment: number;
   isActive: boolean;
-  abayaLength?: AbayaLength;
+  abayaLength?: AbayaLength | null;
   color?: Color | null;
 }
 

@@ -60,6 +60,7 @@ export function ProductFormPage() {
     salePrice: '',
     costPrice: '',
     hasColorOptions: false,
+    productType: 'ABAYA' as 'ABAYA' | 'SIMPLE',
     isFeatured: false,
     isActive: true,
     isNewArrival: false,
@@ -90,6 +91,7 @@ export function ProductFormPage() {
       salePrice: product.salePrice?.toString() || '',
       costPrice: product.costPrice?.toString() || '',
       hasColorOptions: product.hasColorOptions ?? false,
+      productType: (product as any).productType || 'ABAYA',
       isFeatured: product.isFeatured ?? false,
       isActive: product.isActive ?? true,
       isNewArrival: product.isNewArrival ?? false,
@@ -110,13 +112,13 @@ export function ProductFormPage() {
     if (product.variants && product.variants.length > 0) {
       setVariants(product.variants.map((v) => ({
         id: v.id,
-        abayaLengthId: v.abayaLengthId,
+        abayaLengthId: v.abayaLengthId || '',
         colorId: v.colorId || '',
         sku: v.sku,
         priceAdjustment: Number(v.priceAdjustment ?? 0),
         stock: Number(v.stock ?? 0),
       })))
-      setSelectedLengths([...new Set(product.variants.map((v) => v.abayaLengthId))])
+      setSelectedLengths([...new Set(product.variants.map((v) => v.abayaLengthId).filter(Boolean) as string[])])
       const colorIds = product.variants
         .map((v) => v.colorId)
         .filter((cid): cid is string => !!cid)
@@ -216,7 +218,8 @@ export function ProductFormPage() {
     isSaving.current = true
 
     const currentImages = [...images]
-    const currentVariants = buildVariants([...variants])
+    const simpleVariants = [...variants]
+    const builtVariants = buildVariants([...variants])
 
     try {
       const productData = {
@@ -232,6 +235,7 @@ export function ProductFormPage() {
         salePrice: form.salePrice ? parseFloat(form.salePrice) : null,
         costPrice: form.costPrice ? parseFloat(form.costPrice) : null,
         hasColorOptions: form.hasColorOptions,
+        productType: form.productType,
         metaTitleEn: form.metaTitleEn || undefined,
         metaTitleAr: form.metaTitleAr || undefined,
         metaDescEn: form.metaDescEn || undefined,
@@ -249,13 +253,21 @@ export function ProductFormPage() {
             isPrimary: img.isPrimary,
             sortOrder: index,
           })),
-        variants: currentVariants.map((v) => ({
-          sku: v.sku,
-          abayaLengthId: v.abayaLengthId,
-          colorId: v.colorId || null,
-          priceAdjustment: Number(v.priceAdjustment),
-          stock: Number(v.stock),
-        })),
+        variants: form.productType === 'SIMPLE'
+          ? simpleVariants.map((v) => ({
+              sku: v.sku || form.sku,
+              abayaLengthId: null as string | null,
+              colorId: null as string | null,
+              priceAdjustment: 0,
+              stock: Number(v.stock),
+            }))
+          : builtVariants.map((v) => ({
+              sku: v.sku,
+              abayaLengthId: v.abayaLengthId,
+              colorId: v.colorId || null,
+              priceAdjustment: Number(v.priceAdjustment),
+              stock: Number(v.stock),
+            })),
       }
 
       if (isEditing) {
@@ -441,6 +453,45 @@ export function ProductFormPage() {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('products.options')}</h2>
             <div className="flex flex-wrap gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Product Type</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, productType: 'ABAYA' })
+                    }}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${
+                      form.productType === 'ABAYA'
+                        ? 'border-slate-900 bg-slate-900 text-white'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    Abaya / Dress
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, productType: 'SIMPLE', hasColorOptions: false })
+                      setVariants([{
+                        id: 'default-simple',
+                        abayaLengthId: '',
+                        colorId: '',
+                        sku: form.sku,
+                        priceAdjustment: 0,
+                        stock: 0,
+                      }])
+                    }}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${
+                      form.productType === 'SIMPLE'
+                        ? 'border-slate-900 bg-slate-900 text-white'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    Simple Product
+                  </button>
+                </div>
+              </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="w-4 h-4 rounded border-slate-300" />
                 <span className="text-sm font-medium text-slate-700">{t('common.active')}</span>
@@ -453,10 +504,12 @@ export function ProductFormPage() {
                 <input type="checkbox" checked={form.isNewArrival} onChange={(e) => setForm({ ...form, isNewArrival: e.target.checked })} className="w-4 h-4 rounded border-slate-300" />
                 <span className="text-sm font-medium text-slate-700">{t('products.new')}</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.hasColorOptions} onChange={(e) => setForm({ ...form, hasColorOptions: e.target.checked })} className="w-4 h-4 rounded border-slate-300" />
-                <span className="text-sm font-medium text-slate-700">{t('products.hasColorOptions')}</span>
-              </label>
+              {form.productType === 'ABAYA' && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.hasColorOptions} onChange={(e) => setForm({ ...form, hasColorOptions: e.target.checked })} className="w-4 h-4 rounded border-slate-300" />
+                  <span className="text-sm font-medium text-slate-700">{t('products.hasColorOptions')}</span>
+                </label>
+              )}
             </div>
           </div>
 
@@ -509,6 +562,51 @@ export function ProductFormPage() {
 
       {step === 'variants' && (
         <div className="space-y-6">
+          {form.productType === 'SIMPLE' ? (
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Stock & SKU</h2>
+              <p className="text-sm text-slate-500 mb-6">This product has a single variant with no size or color options.</p>
+              {variants.length === 0 && (
+                <button
+                  onClick={() => setVariants([{
+                    id: 'default-simple',
+                    abayaLengthId: '',
+                    colorId: '',
+                    sku: form.sku,
+                    priceAdjustment: 0,
+                    stock: 0,
+                  }])}
+                  className="bg-slate-900 text-white px-6 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  Create Default Variant
+                </button>
+              )}
+              {variants.length > 0 && (
+                <div className="grid grid-cols-2 gap-4 max-w-md">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">SKU</label>
+                    <input
+                      type="text"
+                      value={variants[0].sku}
+                      onChange={(e) => updateVariant(variants[0].id, 'sku', e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Stock</label>
+                    <input
+                      type="number"
+                      value={variants[0].stock}
+                      onChange={(e) => updateVariant(variants[0].id, 'stock', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none"
+                      min="0"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+          <>
           {/* Variant Builder */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('products.buildVariants')}</h2>
@@ -601,6 +699,8 @@ export function ProductFormPage() {
                 </table>
               </div>
             </div>
+          )}
+          </>
           )}
 
           {/* Actions */}

@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -11,6 +10,18 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://designbyshoug.com"
 
 type SortOption = "newest" | "price_asc" | "price_desc" | "best_selling" | "name_asc";
 const VALID_SORTS: SortOption[] = ["newest", "price_asc", "price_desc", "best_selling", "name_asc"];
+
+export async function generateStaticParams() {
+  try {
+    const res = await fetch(`${API_URL}/collections`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const slugs: string[] = (data.data || []).map((c: { slug: string }) => c.slug);
+    return [...slugs.map((slug) => ({ slug })), { slug: "all" }, { slug: "featured" }];
+  } catch {
+    return [{ slug: "all" }, { slug: "featured" }];
+  }
+}
 
 function buildSortParams(s: SortOption): { sortBy: string; sortOrder: string } {
   switch (s) {
@@ -285,15 +296,13 @@ export default async function CollectionDetailPage({
             </p>
             <div className="mt-6 w-16 h-px bg-[#8B7355]" />
           </div>
-          <Suspense>
-            <CollectionProductBrowser
-              initialProducts={initial.products}
-              initialTotal={initial.total}
-              allCollections={allCollections}
-              locale={locale}
-              isFeatured={filters.isFeatured}
-            />
-          </Suspense>
+          <CollectionProductBrowser
+            initialProducts={initial.products}
+            initialTotal={initial.total}
+            allCollections={allCollections}
+            locale={locale}
+            isFeatured={filters.isFeatured}
+          />
         </div>
       </section>
     );
@@ -331,15 +340,13 @@ export default async function CollectionDetailPage({
           <div className="mt-6 w-16 h-px bg-[#8B7355]" />
         </div>
 
-        <Suspense>
-          <CollectionProductBrowser
-            initialProducts={initial.products}
-            initialTotal={initial.total}
-            collectionId={collection.id}
-            allCollections={allCollections}
-            locale={locale}
-          />
-        </Suspense>
+        <CollectionProductBrowser
+          initialProducts={initial.products}
+          initialTotal={initial.total}
+          collectionId={collection.id}
+          allCollections={allCollections}
+          locale={locale}
+        />
       </div>
     </section>
   );

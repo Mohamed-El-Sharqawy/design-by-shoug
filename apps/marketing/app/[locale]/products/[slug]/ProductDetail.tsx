@@ -41,9 +41,14 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
     [product.variants]
   );
 
+  const isSimpleProduct = product.productType === 'SIMPLE';
+
   const lengths = useMemo(
     () =>
-      uniqueBy(variants.map((v) => v.abayaLength).filter(Boolean), (l) => l!.id)
+      uniqueBy(
+        variants.map((v) => v.abayaLength).filter(Boolean) as NonNullable<typeof variants[number]['abayaLength']>[],
+        (l) => l!.id
+      )
         .sort((a, b) => a!.sortOrder - b!.sortOrder),
     [variants]
   );
@@ -76,10 +81,15 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
     const urlVariant = searchParams.get("variant");
     const urlQty = searchParams.get("qty");
 
+    if (isSimpleProduct) {
+      const v = variants[0];
+      return { lengthId: null, colorId: null, qty: urlQty ? parseInt(urlQty, 10) || 1 : 1, variantId: v?.id || null };
+    }
+
     if (urlVariant) {
       const v = variants.find((v) => v.id === urlVariant && v.stock > 0);
       if (v) {
-        return { lengthId: v.abayaLengthId, colorId: v.colorId, qty: urlQty ? parseInt(urlQty, 10) || 1 : 1 };
+        return { lengthId: v.abayaLengthId, colorId: v.colorId, qty: urlQty ? parseInt(urlQty, 10) : 1, variantId: v.id };
       }
     }
 
@@ -89,8 +99,8 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
     const colorsForSelection = colors.filter((c) => colorHasStock(c.id, newLengthId));
     const newColorId = colorsForSelection[0]?.id || colors[0]?.id || null;
 
-    return { lengthId: newLengthId, colorId: newColorId, qty: urlQty ? parseInt(urlQty, 10) || 1 : 1 };
-  }, [searchParams, variants, lengths, colors, lengthHasStock, colorHasStock]);
+    return { lengthId: newLengthId, colorId: newColorId, qty: urlQty ? parseInt(urlQty, 10) || 1 : 1, variantId: null };
+  }, [searchParams, variants, lengths, colors, lengthHasStock, colorHasStock, isSimpleProduct]);
 
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedLengthId, setSelectedLengthId] = useState<string | null>(null);
@@ -155,12 +165,14 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
   const images = product.images || [];
   const sizeGuideImages = product.sizeGuideImages || [];
 
-  const selectedVariant: ProductVariant | undefined = variants.find((v) => {
-    const lengthMatch =
-      !selectedLengthId || v.abayaLengthId === selectedLengthId;
-    const colorMatch = !colors.length || v.colorId === selectedColorId;
-    return lengthMatch && colorMatch;
-  });
+  const selectedVariant: ProductVariant | undefined = isSimpleProduct
+    ? variants[0]
+    : variants.find((v) => {
+        const lengthMatch =
+          !selectedLengthId || v.abayaLengthId === selectedLengthId;
+        const colorMatch = !colors.length || v.colorId === selectedColorId;
+        return lengthMatch && colorMatch;
+      });
 
   const isOutOfStock = selectedVariant ? selectedVariant.stock <= 0 : false;
   const maxStock = selectedVariant?.stock ?? 0;
@@ -343,7 +355,7 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
 
             <div className="w-full h-px bg-[#E8E4DF] my-6" />
 
-            {lengths.length > 0 && (
+            {!isSimpleProduct && lengths.length > 0 && (
               <div className="mb-5">
                 <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2.5">
                   {t("length")}
@@ -375,7 +387,7 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
               </div>
             )}
 
-            {colors.length > 0 && (
+            {!isSimpleProduct && colors.length > 0 && (
               <div className="mb-5">
                 <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2.5">
                   {t("color")}

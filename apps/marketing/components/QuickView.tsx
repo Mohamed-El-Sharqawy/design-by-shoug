@@ -36,9 +36,14 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
     [product.variants]
   );
 
+  const isSimpleProduct = product.productType === 'SIMPLE';
+
   const lengths = useMemo(
     () =>
-      uniqueBy(variants.map((v) => v.abayaLength).filter(Boolean), (l) => l!.id)
+      uniqueBy(
+        variants.map((v) => v.abayaLength).filter(Boolean) as NonNullable<typeof variants[number]['abayaLength']>[],
+        (l) => l!.id
+      )
         .sort((a, b) => a!.sortOrder - b!.sortOrder),
     [variants]
   );
@@ -77,14 +82,21 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
-      const firstAvailableLength = lengths.find((l) => lengthHasStock(l!.id));
-      const newLengthId = firstAvailableLength?.id || lengths[0]?.id || null;
 
-      const colorsForSelection = colors.filter((c) => colorHasStock(c.id, newLengthId));
-      const newColorId = colorsForSelection[0]?.id || colors[0]?.id || null;
+      if (isSimpleProduct) {
+        setSelectedLengthId(null);
+        setSelectedColorId(null);
+      } else {
+        const firstAvailableLength = lengths.find((l) => lengthHasStock(l!.id));
+        const newLengthId = firstAvailableLength?.id || lengths[0]?.id || null;
 
-      setSelectedLengthId(newLengthId);
-      setSelectedColorId(newColorId);
+        const colorsForSelection = colors.filter((c) => colorHasStock(c.id, newLengthId));
+        const newColorId = colorsForSelection[0]?.id || colors[0]?.id || null;
+
+        setSelectedLengthId(newLengthId);
+        setSelectedColorId(newColorId);
+      }
+
       setAdded(false);
       setSelectedImageIdx(0);
     } else {
@@ -93,7 +105,7 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [open, lengths, colors, lengthHasStock, colorHasStock]);
+  }, [open, lengths, colors, lengthHasStock, colorHasStock, isSimpleProduct]);
 
   const handleSelectLength = (id: string) => {
     if (!lengthHasStock(id)) return;
@@ -109,11 +121,13 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
     setSelectedColorId(id);
   };
 
-  const selectedVariant: ProductVariant | undefined = variants.find((v) => {
-    const lengthMatch = !selectedLengthId || v.abayaLengthId === selectedLengthId;
-    const colorMatch = !colors.length || v.colorId === selectedColorId;
-    return lengthMatch && colorMatch;
-  });
+  const selectedVariant: ProductVariant | undefined = isSimpleProduct
+    ? variants[0]
+    : variants.find((v) => {
+        const lengthMatch = !selectedLengthId || v.abayaLengthId === selectedLengthId;
+        const colorMatch = !colors.length || v.colorId === selectedColorId;
+        return lengthMatch && colorMatch;
+      });
 
   const isOutOfStock = selectedVariant ? selectedVariant.stock <= 0 : false;
   const name = isRtl ? product.nameAr : product.nameEn;
@@ -252,7 +266,7 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
 
               <div className="w-full h-px bg-[#E8E4DF] my-5" />
 
-              {lengths.length > 0 && (
+              {!isSimpleProduct && lengths.length > 0 && (
                 <div className="mb-5">
                   <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2.5">{t("length")}</p>
                   <div className="flex flex-wrap gap-2">
@@ -282,7 +296,7 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
                 </div>
               )}
 
-              {colors.length > 0 && (
+              {!isSimpleProduct && colors.length > 0 && (
                 <div className="mb-5">
                   <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2.5">{t("color")}</p>
                   <div className="flex flex-wrap gap-2.5">
