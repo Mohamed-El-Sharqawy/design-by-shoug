@@ -112,6 +112,67 @@ function resolveServerFilters(
   return { collectionId, isFeatured, sort, minPrice, maxPrice, page };
 }
 
+// ─── SEO helpers ──────────────────────────────────────────────────────────────
+
+/** Brand-voice defaults for special virtual slugs */
+const SPECIAL_SLUG_META: Record<
+  string,
+  Record<"en" | "ar", { title: string; description: string }>
+> = {
+  all: {
+    en: {
+      title: "Shop All Abayas in UAE | Design By Shoug",
+      description:
+        "Explore the full Design By Shoug catalogue — handcrafted luxury abayas, modern cuts and timeless silhouettes shipped across the UAE and GCC.",
+    },
+    ar: {
+      title: "تسوّقي جميع العبايات في الإمارات | ديزاين باي شوق",
+      description:
+        "استعرضي الكتالوج الكامل لديزاين باي شوق — عبايات فاخرة مصنوعة بعناية، بأساليب عصرية وخامات راقية، توصيل في الإمارات ودول الخليج.",
+    },
+  },
+  featured: {
+    en: {
+      title: "Featured Abayas — Editor's Picks | Design By Shoug",
+      description:
+        "Discover our curated edit of standout abayas — statement pieces chosen for their craftsmanship, elegance and modern Saudi-Gulf aesthetic.",
+    },
+    ar: {
+      title: "عبايات مميزة — اختيارات المحررة | ديزاين باي شوق",
+      description:
+        "اكتشفي أبرز عباياتنا المختارة بعناية — قطع استثنائية تجمع بين الحرفية الرفيعة والأناقة العصرية بلمسة خليجية أصيلة.",
+    },
+  },
+};
+
+/**
+ * Build a keyword-rich, on-brand default title (≤ 60 chars).
+ * Pattern: "{Collection Name} Abayas in UAE | Design By Shoug"
+ */
+function buildDefaultTitle(name: string, isAr: boolean): string {
+  if (isAr) {
+    return `عبايات ${name} في الإمارات | ديزاين باي شوق`;
+  }
+  const candidate = `${name} Abayas in UAE | Design By Shoug`;
+  // If it fits in 60 chars, great; otherwise fall back to shorter form
+  return candidate.length <= 60 ? candidate : `${name} | Design By Shoug`;
+}
+
+/**
+ * Build a benefit-driven default description (120–155 chars).
+ * Incorporates collection name + brand differentiators.
+ */
+function buildDefaultDescription(name: string, isAr: boolean): string {
+  if (isAr) {
+    return `تصفحي مجموعة ${name} من ديزاين باي شوق — عبايات فاخرة بتصاميم عصرية وخامات عالية الجودة، مثالية للمرأة الخليجية الأنيقة.`;
+  }
+  // Fixed suffix is 121 chars, leaving 34 chars for the collection name before hitting 155
+  const desc = `Shop ${name} by Design By Shoug — luxury abayas with premium fabrics and modern silhouettes, crafted for the discerning woman.`;
+  return desc.length <= 155 ? desc : desc.slice(0, 152) + "...";
+}
+
+// ─── generateMetadata ─────────────────────────────────────────────────────────
+
 export async function generateMetadata({
   params,
 }: {
@@ -119,20 +180,18 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = await params;
   const canonical = `${SITE_URL}/${locale}/collections/${slug}`;
+  const isAr = locale === "ar";
+  const lang = isAr ? "ar" : "en";
 
-  if (slug === "all") {
+  // Handle special virtual slugs (all, featured, …)
+  if (SPECIAL_SLUG_META[slug]) {
+    const m = SPECIAL_SLUG_META[slug][lang];
     return {
-      title: "All Products | Design By Shoug",
-      description: "Browse our complete collection of luxury abayas",
+      title: m.title,
+      description: m.description,
       alternates: { canonical },
-    };
-  }
-
-  if (slug === "featured") {
-    return {
-      title: "Featured Pieces | Design By Shoug",
-      description: "Our handpicked selection of standout abayas",
-      alternates: { canonical },
+      openGraph: { title: m.title, description: m.description, url: canonical },
+      twitter: { title: m.title, description: m.description },
     };
   }
 
@@ -140,18 +199,32 @@ export async function generateMetadata({
     const res = await fetch(`${API_URL}/collections/slug/${slug}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return { title: "Collection | Design By Shoug", alternates: { canonical } };
+    if (!res.ok) {
+      const fallbackTitle = isAr
+        ? "مجموعة فاخرة | ديزاين باي شوق"
+        : "Luxury Abaya Collection | Design By Shoug";
+      return { title: fallbackTitle, alternates: { canonical } };
+    }
+
     const data = await res.json();
     const collection = data.data as Collection | null;
-    if (!collection) return { title: "Collection | Design By Shoug", alternates: { canonical } };
+    if (!collection) {
+      const fallbackTitle = isAr
+        ? "مجموعة فاخرة | ديزاين باي شوق"
+        : "Luxury Abaya Collection | Design By Shoug";
+      return { title: fallbackTitle, alternates: { canonical } };
+    }
 
-    const isAr = locale === "ar";
+    const collectionName = isAr ? collection.nameAr : collection.nameEn;
+
+    // Priority: CMS meta field → SEO-crafted default (skip DB description — that's page content, not SEO copy)
     const metaTitle = isAr
-      ? collection.metaTitleAr || `${collection.nameAr} | ديزاين باي شوق`
-      : collection.metaTitleEn || `${collection.nameEn} | Design By Shoug`;
+      ? collection.metaTitleAr || buildDefaultTitle(collectionName, true)
+      : collection.metaTitleEn || buildDefaultTitle(collectionName, false);
+
     const metaDesc = isAr
-      ? collection.metaDescAr || collection.descriptionAr || `تصفحي مجموعة ${collection.nameAr} من العبايات الفاخرة`
-      : collection.metaDescEn || collection.descriptionEn || `Browse our ${collection.nameEn} collection of luxury abayas`;
+      ? collection.metaDescAr || buildDefaultDescription(collectionName, true)
+      : collection.metaDescEn || buildDefaultDescription(collectionName, false);
 
     return {
       title: metaTitle,
@@ -164,12 +237,16 @@ export async function generateMetadata({
         images: collection.imageUrl ? [{ url: collection.imageUrl }] : undefined,
       },
       twitter: {
+        card: "summary_large_image",
         title: metaTitle,
         description: metaDesc,
       },
     };
   } catch {
-    return { title: "Collection | Design By Shoug", alternates: { canonical } };
+    const fallbackTitle = isAr
+      ? "مجموعة فاخرة | ديزاين باي شوق"
+      : "Luxury Abaya Collection | Design By Shoug";
+    return { title: fallbackTitle, alternates: { canonical } };
   }
 }
 
