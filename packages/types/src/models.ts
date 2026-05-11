@@ -98,6 +98,10 @@ export interface Collection {
   descriptionEn: string | null;
   descriptionAr: string | null;
   imageUrl: string | null;
+  metaTitleEn: string | null;
+  metaTitleAr: string | null;
+  metaDescEn: string | null;
+  metaDescAr: string | null;
   isActive: boolean;
   showOnCollectionsPage: boolean;
   showInHeader: boolean;

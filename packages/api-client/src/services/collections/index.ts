@@ -17,6 +17,10 @@ export interface CreateCollectionDto {
   descriptionEn?: string;
   descriptionAr?: string;
   imageUrl?: string;
+  metaTitleEn?: string;
+  metaTitleAr?: string;
+  metaDescEn?: string;
+  metaDescAr?: string;
   isActive?: boolean;
   sortOrder?: number;
 }

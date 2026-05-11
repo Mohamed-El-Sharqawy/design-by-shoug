@@ -22,6 +22,10 @@ export function CollectionsPage() {
     descriptionEn: '',
     descriptionAr: '',
     imageUrl: '',
+    metaTitleEn: '',
+    metaTitleAr: '',
+    metaDescEn: '',
+    metaDescAr: '',
     isActive: true,
     showOnCollectionsPage: true,
     showInHeader: false,
@@ -38,6 +42,10 @@ export function CollectionsPage() {
         descriptionEn: collection.descriptionEn || '',
         descriptionAr: collection.descriptionAr || '',
         imageUrl: collection.imageUrl || '',
+        metaTitleEn: collection.metaTitleEn || '',
+        metaTitleAr: collection.metaTitleAr || '',
+        metaDescEn: collection.metaDescEn || '',
+        metaDescAr: collection.metaDescAr || '',
         isActive: collection.isActive,
         showOnCollectionsPage: collection.showOnCollectionsPage,
         showInHeader: collection.showInHeader,
@@ -52,6 +60,10 @@ export function CollectionsPage() {
         descriptionEn: '',
         descriptionAr: '',
         imageUrl: '',
+        metaTitleEn: '',
+        metaTitleAr: '',
+        metaDescEn: '',
+        metaDescAr: '',
         isActive: true,
         showOnCollectionsPage: true,
         showInHeader: false,
@@ -248,6 +260,67 @@ export function CollectionsPage() {
                     return result.url
                   }}
                 />
+              </div>
+
+              {/* SEO */}
+              <div className="border border-slate-200 rounded-lg p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">
+                  {t('collections.seo')}
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {t('collections.metaTitleEn')}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.metaTitleEn}
+                      onChange={(e) => setFormData({ ...formData, metaTitleEn: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none"
+                      placeholder="e.g. New Arrivals | Design By Shoug"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {t('collections.metaTitleAr')}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.metaTitleAr}
+                      onChange={(e) => setFormData({ ...formData, metaTitleAr: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none"
+                      dir="rtl"
+                      placeholder="مثال: وصل حديثاً | ديزاين باي شوق"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {t('collections.metaDescEn')}
+                    </label>
+                    <textarea
+                      value={formData.metaDescEn}
+                      onChange={(e) => setFormData({ ...formData, metaDescEn: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none"
+                      rows={2}
+                      placeholder="Short description for search engines (max 160 chars)"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {t('collections.metaDescAr')}
+                    </label>
+                    <textarea
+                      value={formData.metaDescAr}
+                      onChange={(e) => setFormData({ ...formData, metaDescAr: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none"
+                      dir="rtl"
+                      rows={2}
+                      placeholder="وصف قصير لمحركات البحث (حتى ١٦٠ حرفاً)"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-6">

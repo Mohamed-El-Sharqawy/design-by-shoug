@@ -606,7 +606,12 @@
     "noImage": "لا توجد صورة",
     "productCount": "المنتجات",
     "showOnCollectionsPage": "عرض في صفحة المجموعات",
-    "showInHeader": "عرض في القائمة العلوية"
+    "showInHeader": "عرض في القائمة العلوية",
+    "seo": "تهيئة محركات البحث",
+    "metaTitleEn": "عنوان Meta (إنجليزي)",
+    "metaTitleAr": "عنوان Meta (عربي)",
+    "metaDescEn": "وصف Meta (إنجليزي)",
+    "metaDescAr": "وصف Meta (عربي)"
   },
   "orders": {
     "title": "الطلبات",

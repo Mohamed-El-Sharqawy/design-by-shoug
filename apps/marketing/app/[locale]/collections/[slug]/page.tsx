@@ -7,6 +7,7 @@ import type { Collection, Product } from "@repo/types";
 import { CollectionProductBrowser } from "./CollectionProductBrowser";
 
 const API_URL = process.env.API_URL || "http://localhost:3001";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://designbyshoug.com";
 
 type SortOption = "newest" | "price_asc" | "price_desc" | "best_selling" | "name_asc";
 const VALID_SORTS: SortOption[] = ["newest", "price_asc", "price_desc", "best_selling", "name_asc"];
@@ -114,13 +115,16 @@ function resolveServerFilters(
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
+  const canonical = `${SITE_URL}/${locale}/collections/${slug}`;
+
   if (slug === "all") {
     return {
       title: "All Products | Design By Shoug",
       description: "Browse our complete collection of luxury abayas",
+      alternates: { canonical },
     };
   }
 
@@ -128,6 +132,7 @@ export async function generateMetadata({
     return {
       title: "Featured Pieces | Design By Shoug",
       description: "Our handpicked selection of standout abayas",
+      alternates: { canonical },
     };
   }
 
@@ -135,21 +140,36 @@ export async function generateMetadata({
     const res = await fetch(`${API_URL}/collections/slug/${slug}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return { title: "Collection | Design By Shoug" };
+    if (!res.ok) return { title: "Collection | Design By Shoug", alternates: { canonical } };
     const data = await res.json();
     const collection = data.data as Collection | null;
-    if (!collection) return { title: "Collection | Design By Shoug" };
+    if (!collection) return { title: "Collection | Design By Shoug", alternates: { canonical } };
+
+    const isAr = locale === "ar";
+    const metaTitle = isAr
+      ? collection.metaTitleAr || `${collection.nameAr} | ديزاين باي شوق`
+      : collection.metaTitleEn || `${collection.nameEn} | Design By Shoug`;
+    const metaDesc = isAr
+      ? collection.metaDescAr || collection.descriptionAr || `تصفحي مجموعة ${collection.nameAr} من العبايات الفاخرة`
+      : collection.metaDescEn || collection.descriptionEn || `Browse our ${collection.nameEn} collection of luxury abayas`;
+
     return {
-      title: `${collection.nameEn} | Design By Shoug`,
-      description: collection.descriptionEn || `Browse our ${collection.nameEn} collection of luxury abayas`,
+      title: metaTitle,
+      description: metaDesc,
+      alternates: { canonical },
       openGraph: {
-        title: `${collection.nameEn} | Design By Shoug`,
-        description: collection.descriptionEn || `Browse our ${collection.nameEn} collection of luxury abayas`,
+        title: metaTitle,
+        description: metaDesc,
+        url: canonical,
         images: collection.imageUrl ? [{ url: collection.imageUrl }] : undefined,
+      },
+      twitter: {
+        title: metaTitle,
+        description: metaDesc,
       },
     };
   } catch {
-    return { title: "Collection | Design By Shoug" };
+    return { title: "Collection | Design By Shoug", alternates: { canonical } };
   }
 }
 

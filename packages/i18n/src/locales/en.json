@@ -606,7 +606,12 @@
     "noImage": "No image",
     "productCount": "Products",
     "showOnCollectionsPage": "Show on Collections Page",
-    "showInHeader": "Show in Header Navigation"
+    "showInHeader": "Show in Header Navigation",
+    "seo": "SEO",
+    "metaTitleEn": "Meta Title (English)",
+    "metaTitleAr": "Meta Title (Arabic)",
+    "metaDescEn": "Meta Description (English)",
+    "metaDescAr": "Meta Description (Arabic)"
   },
   "orders": {
     "title": "Orders",

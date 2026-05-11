@@ -9,6 +9,11 @@ model Collection {
 
   imageUrl String?
 
+  metaTitleEn String?
+  metaTitleAr String?
+  metaDescEn  String?
+  metaDescAr  String?
+
   isActive              Boolean @default(true)
   showOnCollectionsPage Boolean @default(true)
   showInHeader          Boolean @default(false)

@@ -5,10 +5,41 @@ import type { Collection } from "@repo/types";
 import { setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Collections | Design By Shoug",
-  description: "Browse our curated collections of luxury abayas",
-};
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://designbyshoug.com";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const canonical = `${SITE_URL}/${locale}/collections`;
+
+  const isAr = locale === "ar";
+
+  const title = isAr
+    ? "المجموعات الفاخرة في الإمارات | ديزاين باي شوق"
+    : "Luxury Collections in UAE | Design By Shoug";
+
+  const description = isAr
+    ? "تصفحي مجموعات الأزياء الفاخرة في الإمارات من ديزاين باي شوق، عبايات أنيقة وتصاميم عصرية بخامات عالية الجودة ولمسة فاخرة."
+    : "Browse luxury collections in the UAE by Design By Shoug. Discover elegant abayas and timeless designs crafted with premium quality and modern style.";
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+    },
+    twitter: {
+      title,
+      description,
+    },
+  };
+}
 
 const API_URL = process.env.API_URL || "http://localhost:3001";
 
