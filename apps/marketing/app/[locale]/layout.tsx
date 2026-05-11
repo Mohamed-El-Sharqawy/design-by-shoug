@@ -27,23 +27,24 @@ const geistMono = localFont({
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
-  const baseUrl = "http://localhost:3000";
+  const baseUrl = "https://designbyshoug.com";
   const canonicalUrl = locale ? `${baseUrl}/${locale}` : baseUrl;
-  const description = locale === "ar" ? "انطلقت Design by Shoug من شغف بابتكار عبايات تبرز جمال الأزياء المحتشمة. كل قطعة في مجموعتنا مصممة بعناية فائقة لمزج التقاليد العريقة مع الجماليات المعاصرة، مما يمكن المرأة من التعبير عن شخصيتها برقي وثقة." : "Design by Shoug was born from a passion for creating abayas that celebrate the beauty of modest fashion. Each piece in our collection is thoughtfully designed to blend timeless tradition with contemporary aesthetics, empowering women to express their individuality with grace and confidence.";
+  const title = locale === "ar" ? "ديزاين باي شوق | أزياء فاخرة وأناقة عصرية" : "Design By Shoug | Luxury Fashion & Elegant Modern Style";
+  const description = locale === "ar" ? "اكتشف ديزاين باي شوق — علامة أزياء عصرية تقدم تصاميم أنيقة وفاخرة تجمع بين الجمال، البساطة، والأناقة اليومية." : "Discover Design By Shoug — a modern fashion brand offering elegant, timeless, and stylish pieces crafted for confidence and everyday luxury.";
 
   return {
     metadataBase: new URL(baseUrl),
-    title: "Design By Shoug",
+    title,
     description,
     openGraph: {
-      title: "Design By Shoug",
+      title,
       description,
       images: "/opengraph-image.png",
       url: canonicalUrl,
       type: "website",
     },
     twitter: {
-      title: "Design By Shoug",
+      title,
       description,
       images: "/twitter-image.png",
       card: "summary_large_image",
