@@ -41,7 +41,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/.next/static ./.ne
 USER nextjs
 EXPOSE 4001
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:4001/ || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:4001/ || exit 1
 
 CMD ["node", "apps/marketing/server.js"]
