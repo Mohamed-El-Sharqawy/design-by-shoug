@@ -10,6 +10,7 @@ import { Qualities } from "@/components/Qualities";
 import { Footer } from "@/components/Footer";
 import { AuthHydrator } from "@/components/AuthHydrator";
 import { CartBottomBar } from "@/components/CartBottomBar";
+import { WhatsAppFAB } from "@/components/WhatsAppFAB";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { Providers } from "@/components/Providers";
 import { FacebookPixel } from "@/components/FacebookPixel";
@@ -178,6 +179,7 @@ export default async function LocaleLayout({
             <Qualities />
             <Footer />
             <CartBottomBar />
+            <WhatsAppFAB />
           </Providers>
         </NextIntlClientProvider>
       </body>
