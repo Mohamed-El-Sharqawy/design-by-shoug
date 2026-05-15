@@ -34,9 +34,9 @@ ENV PORT=4001
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/apps/marketing/public ./public
+COPY --from=builder /app/apps/marketing/public ./apps/marketing/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/.next/static ./apps/marketing/.next/static
 
 USER nextjs
 EXPOSE 4001
