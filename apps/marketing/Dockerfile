@@ -10,7 +10,7 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/package.json
 COPY packages/api-client/package.json ./packages/api-client/package.json
 COPY packages/i18n/package.json ./packages/i18n/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
-RUN bun install
+RUN bun install --frozen-lockfile
 
 FROM node:22-alpine AS builder
 ARG NEXT_PUBLIC_API_URL
@@ -26,16 +26,22 @@ RUN cd apps/marketing && npx next build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
+
 ENV NODE_ENV=production
+ENV HOSTNAME="0.0.0.0"
+ENV PORT=4001
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/apps/marketing/public ./apps/marketing/public
+COPY --from=builder /app/apps/marketing/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/.next/standalone ./
-COPY --from=builder /app/apps/marketing/.next/static ./apps/marketing/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/.next/static ./.next/static
 
 USER nextjs
 EXPOSE 4001
-ENV PORT=4001
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:4001/ || exit 1
+
 CMD ["node", "apps/marketing/server.js"]
