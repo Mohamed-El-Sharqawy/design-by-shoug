@@ -3,6 +3,7 @@ import { jwt } from "@elysiajs/jwt";
 import { bearer } from "@elysiajs/bearer";
 import { AuthService } from "./service";
 import { AppError } from "@/lib/errors";
+import { sendMetaEvent } from "@/lib/meta-capi";
 import {
   RegisterBody,
   LoginBody,
@@ -98,9 +99,26 @@ const publicAuthRoutes = new Elysia({ prefix: "/auth" })
   })
   .post(
     "/register",
-    async ({ body, jwt }) => {
+    async ({ body, jwt, request }) => {
       const user = await AuthService.register(body);
       const token = await jwt.sign({ sub: user.id, role: user.role });
+
+      try {
+        await sendMetaEvent({
+          eventName: "CompleteRegistration",
+          eventId: body.eventId || `register_${user.id}`,
+          email: body.email,
+          firstName: body.firstName || undefined,
+          lastName: body.lastName || undefined,
+          fbp: body.fbp,
+          fbc: body.fbc,
+          userAgent: request.headers.get("user-agent") || undefined,
+          ip: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+            || request.headers.get("x-real-ip") || undefined,
+        });
+      } catch (err) {
+        console.error("Failed to send Meta CAPI CompleteRegistration event:", err);
+      }
 
       return {
         success: true,

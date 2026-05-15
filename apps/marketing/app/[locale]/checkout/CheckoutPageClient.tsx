@@ -13,6 +13,7 @@ import {
   trackInitiateCheckoutDirect,
   trackPurchase,
 } from "@/lib/fb-helpers";
+import { getFbp, getFbc } from "@/lib/meta-cookies";
 import {
   useAddresses,
   useCreateAddress,
@@ -220,6 +221,8 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
+      const metaCookies = { fbp: getFbp(), fbc: getFbc() };
+
       if (isBuyNow && directItem) {
         const res = await fetch(`${API_URL}/orders/direct`, {
           method: "POST",
@@ -232,11 +235,20 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             notesCustomer: notes || undefined,
             couponCode: couponCode || undefined,
             locale,
+            ...metaCookies,
           }),
         });
         const json = await res.json();
         if (json.success && json.data?.order) {
+          const eventId = `order_${json.data.order.id}`;
           if (json.data.checkoutUrl) {
+            trackPurchase(
+              json.data.order.orderNumber,
+              total,
+              [directItem.productId],
+              directItem.quantity,
+              eventId,
+            );
             window.location.href = json.data.checkoutUrl;
             return;
           }
@@ -245,6 +257,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             total,
             [directItem.productId],
             directItem.quantity,
+            eventId,
           );
           setOrderResult({
             orderNumber: json.data.order.orderNumber,
@@ -268,10 +281,12 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             notesCustomer: notes || undefined,
             couponCode: couponCode || undefined,
             locale,
+            ...metaCookies,
           }),
         });
         const json = await res.json();
         if (json.success && json.data?.order) {
+          const eventId = `order_${json.data.order.id}`;
           if (json.data.checkoutUrl) {
             clearCart.mutate();
             trackPurchase(
@@ -279,6 +294,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
               total,
               items.map((i) => i.productId),
               items.reduce((s, i) => s + i.quantity, 0),
+              eventId,
             );
             window.location.href = json.data.checkoutUrl;
             return;
@@ -289,6 +305,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             total,
             items.map((i) => i.productId),
             items.reduce((s, i) => s + i.quantity, 0),
+            eventId,
           );
           setOrderResult({
             orderNumber: json.data.order.orderNumber,

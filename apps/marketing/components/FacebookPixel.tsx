@@ -57,16 +57,24 @@ function isDuplicate(event: string, params?: Record<string, unknown>): boolean {
   return false;
 }
 
-export function trackEvent(event: string, params?: Record<string, unknown>) {
+export function trackEvent(event: string, params?: Record<string, unknown>, eventID?: string) {
   if (typeof window !== "undefined" && window.fbq) {
     if (isDuplicate(event, params)) return;
-    window.fbq("track", event, params);
+    if (eventID) {
+      window.fbq("track", event, params, { eventID });
+    } else {
+      window.fbq("track", event, params);
+    }
   }
 }
 
-export function trackCustomEvent(event: string, params?: Record<string, unknown>) {
+export function trackCustomEvent(event: string, params?: Record<string, unknown>, eventID?: string) {
   if (typeof window !== "undefined" && window.fbq) {
     if (isDuplicate(event, params)) return;
-    window.fbq("trackCustom", event, params);
+    if (eventID) {
+      window.fbq("trackCustom", event, params, { eventID });
+    } else {
+      window.fbq("trackCustom", event, params);
+    }
   }
 }

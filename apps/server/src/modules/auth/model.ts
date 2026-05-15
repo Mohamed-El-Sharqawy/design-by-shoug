@@ -6,6 +6,9 @@ export const RegisterBody = t.Object({
   firstName: t.Optional(t.String()),
   lastName: t.Optional(t.String()),
   phone: t.Optional(t.String()),
+  eventId: t.Optional(t.String()),
+  fbp: t.Optional(t.String()),
+  fbc: t.Optional(t.String()),
 });
 
 export const LoginBody = t.Object({

@@ -36,6 +36,8 @@ export const CreateOrderBody = t.Object({
   couponCode: t.Optional(t.String()),
   items: t.Optional(t.Array(GuestOrderItemSchema)),
   locale: t.Optional(t.String()),
+  fbp: t.Optional(t.String()),
+  fbc: t.Optional(t.String()),
 });
 
 // Direct purchase: buy a single item without adding to cart
@@ -58,6 +60,8 @@ export const DirectPurchaseBody = t.Object({
   email: t.Optional(t.String({ format: "email" })),
   couponCode: t.Optional(t.String()),
   locale: t.Optional(t.String()),
+  fbp: t.Optional(t.String()),
+  fbc: t.Optional(t.String()),
 });
 
 export const UpdateOrderStatusBody = t.Object({

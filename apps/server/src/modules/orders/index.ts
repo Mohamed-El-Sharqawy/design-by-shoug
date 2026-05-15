@@ -15,13 +15,15 @@ const publicOrderRoutes = new Elysia({ prefix: "/orders" })
   .use(authPlugin)
   .derive(({ headers }) => {
     const sessionId = headers["x-session-id"];
-    return { sessionId };
+    const ip = (headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || headers["x-real-ip"] as string || undefined;
+    const userAgent = headers["user-agent"] as string || undefined;
+    return { sessionId, requestMeta: { ip, userAgent } };
   })
   .post(
     "/",
     async (ctx) => {
       const user = ctx.user as AuthUser | null;
-      const result = await OrderService.create(ctx.body, user?.id, ctx.sessionId);
+      const result = await OrderService.create(ctx.body, user?.id, ctx.sessionId, ctx.requestMeta);
       return { success: true, data: result };
     },
     { body: CreateOrderBody }
@@ -30,7 +32,7 @@ const publicOrderRoutes = new Elysia({ prefix: "/orders" })
     "/direct",
     async (ctx) => {
       const user = ctx.user as AuthUser | null;
-      const result = await OrderService.directPurchase(ctx.body, user?.id);
+      const result = await OrderService.directPurchase(ctx.body, user?.id, ctx.requestMeta);
       return { success: true, data: result };
     },
     { body: DirectPurchaseBody }

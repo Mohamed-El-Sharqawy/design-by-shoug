@@ -25,6 +25,9 @@ model Order {
   notesCustomer String?
   notesInternal String?
 
+  fbp String?
+  fbc String?
+
   shippedAt   DateTime?
   deliveredAt DateTime?
   cancelledAt DateTime?

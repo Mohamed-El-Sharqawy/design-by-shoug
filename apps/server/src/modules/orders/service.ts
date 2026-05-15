@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { createCheckoutSession, retrievePaymentIntent } from "@/lib/ziina";
 import { sendOrderConfirmationEmail, sendOwnerOrderNotification } from "@/lib/mail";
+import { sendMetaEvent } from "@/lib/meta-capi";
 import { CartService } from "@/modules/cart/service";
 import { CouponService } from "@/modules/coupons/service";
 import type {
@@ -42,7 +43,8 @@ export abstract class OrderService {
   static async create(
     input: CreateOrderInput,
     userId?: string,
-    sessionId?: string
+    sessionId?: string,
+    requestMeta?: { ip?: string; userAgent?: string }
   ) {
     let addressId = input.addressId;
 
@@ -72,6 +74,7 @@ export abstract class OrderService {
 
     let orderItemsData: {
       variantId: string;
+      productId: string;
       productNameEn: string;
       productNameAr: string;
       variantDetails: string;
@@ -110,6 +113,7 @@ export abstract class OrderService {
 
       orderItemsData = cart.items.map((item: any) => ({
         variantId: item.variantId,
+        productId: item.variant.product.id,
         productNameEn: item.variant.product.nameEn,
         productNameAr: item.variant.product.nameAr,
         variantDetails: `${item.variant.abayaLength?.labelEn || ""}${item.variant.color ? ` / ${item.variant.color.nameEn}` : ""}`,
@@ -161,6 +165,7 @@ export abstract class OrderService {
 
         orderItemsData.push({
           variantId: item.variantId,
+          productId: variant.product.id,
           productNameEn: variant.product.nameEn,
           productNameAr: variant.product.nameAr,
           variantDetails: `${variant.abayaLength?.labelEn || ""}${variant.color ? ` / ${variant.color.nameEn}` : ""}`,
@@ -214,8 +219,10 @@ export abstract class OrderService {
         couponId: coupon.couponId,
         couponCode: coupon.couponCode,
         notesCustomer: input.notesCustomer,
+        fbp: input.fbp || undefined,
+        fbc: input.fbc || undefined,
         items: {
-          create: orderItemsData.map(({ image: _, ...rest }) => rest),
+          create: orderItemsData.map(({ image: _, productId: _p, ...rest }) => rest),
         },
       },
       include: {
@@ -314,6 +321,28 @@ export abstract class OrderService {
       console.error("Failed to send order emails:", err);
     }
 
+    try {
+      await sendMetaEvent({
+        eventName: "Purchase",
+        eventId: `order_${order.id}`,
+        email: customerEmail || undefined,
+        phone: order.address?.phone || undefined,
+        firstName: order.address?.fullName?.split(" ")[0] || undefined,
+        lastName: order.address?.fullName?.split(" ").slice(1).join(" ") || undefined,
+        ip: requestMeta?.ip,
+        userAgent: requestMeta?.userAgent,
+        fbp: input.fbp || undefined,
+        fbc: input.fbc || undefined,
+        value: Number(order.total),
+        currency: "AED",
+        contentIds: orderItemsData.map((i) => i.productId),
+        contentType: "product",
+        numItems: orderItemsData.reduce((s, i) => s + i.quantity, 0),
+      });
+    } catch (err) {
+      console.error("Failed to send Meta CAPI event:", err);
+    }
+
     return {
       order,
       checkoutUrl,
@@ -324,7 +353,7 @@ export abstract class OrderService {
    * Direct purchase: Create an order for a single item without using the cart.
    * Validates size selection (standard or custom) the same way as cart.
    */
-  static async directPurchase(input: DirectPurchaseInput, userId?: string) {
+  static async directPurchase(input: DirectPurchaseInput, userId?: string, requestMeta?: { ip?: string; userAgent?: string }) {
     CartService.validateSizeSelection({
       variantId: input.variantId,
       quantity: input.quantity,
@@ -412,6 +441,8 @@ export abstract class OrderService {
         couponId: coupon.couponId,
         couponCode: coupon.couponCode,
         notesCustomer: input.notesCustomer,
+        fbp: input.fbp || undefined,
+        fbc: input.fbc || undefined,
         items: {
           create: {
             variantId: input.variantId,
@@ -517,6 +548,28 @@ export abstract class OrderService {
       await sendOwnerOrderNotification(order.orderNumber, emailDetails);
     } catch (err) {
       console.error("Failed to send order emails:", err);
+    }
+
+    try {
+      await sendMetaEvent({
+        eventName: "Purchase",
+        eventId: `order_${order.id}`,
+        email: customerEmail || undefined,
+        phone: order.address?.phone || undefined,
+        firstName: order.address?.fullName?.split(" ")[0] || undefined,
+        lastName: order.address?.fullName?.split(" ").slice(1).join(" ") || undefined,
+        ip: requestMeta?.ip,
+        userAgent: requestMeta?.userAgent,
+        fbp: input.fbp || undefined,
+        fbc: input.fbc || undefined,
+        value: Number(order.total),
+        currency: "AED",
+        contentIds: [variant.product.id],
+        contentType: "product",
+        numItems: input.quantity,
+      });
+    } catch (err) {
+      console.error("Failed to send Meta CAPI event:", err);
     }
 
     return {

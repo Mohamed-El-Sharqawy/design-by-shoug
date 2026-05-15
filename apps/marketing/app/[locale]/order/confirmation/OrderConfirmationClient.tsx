@@ -41,11 +41,13 @@ export function OrderConfirmationClient() {
             orderNumber: json.data.orderNumber,
             id: json.data.id,
           });
+          const eventId = orderId ? `order_${orderId}` : undefined;
           trackPurchase(
             json.data.orderNumber,
             json.data.total ?? 0,
             json.data.items?.map((i: { productId: string }) => i.productId) ?? [json.data.id],
             json.data.items?.reduce((s: number, i: { quantity: number }) => s + i.quantity, 0) ?? 1,
+            eventId,
           );
         } else {
           setError(true);

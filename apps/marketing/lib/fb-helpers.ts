@@ -91,6 +91,7 @@ export function trackPurchase(
   value: number,
   productIds: string[],
   numItems: number,
+  eventID?: string,
 ) {
   trackEvent("Purchase", {
     value,
@@ -100,7 +101,7 @@ export function trackPurchase(
     content_name: `Order #${orderNumber}`,
     num_items: numItems,
     order_id: orderNumber,
-  });
+  }, eventID);
 }
 
 export function trackSearch(query: string, productIds: string[]) {
@@ -111,11 +112,11 @@ export function trackSearch(query: string, productIds: string[]) {
   });
 }
 
-export function trackCompleteRegistration(name: string) {
+export function trackCompleteRegistration(name: string, eventID?: string) {
   trackEvent("CompleteRegistration", {
     status: "registered",
     content_name: name,
-  });
+  }, eventID);
 }
 
 export function trackLogin() {
@@ -133,10 +134,10 @@ export function trackRemoveFromCart(item: CartItemLocal) {
   });
 }
 
-export function trackLead(source: string) {
+export function trackLead(source: string, eventID?: string) {
   trackEvent("Lead", {
     content_name: source,
-  });
+  }, eventID);
 }
 
 export function trackSubscribe() {

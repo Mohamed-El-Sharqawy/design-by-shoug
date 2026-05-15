@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { trackLead } from "@/lib/fb-helpers";
+import { getFbp, getFbc } from "@/lib/meta-cookies";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:3001";
@@ -28,17 +29,23 @@ export function ContactPageClient({ locale }: { locale: string }) {
     };
 
     try {
+      const eventId = `lead_${data.email}_${Date.now()}`;
       const res = await fetch(`${API_URL}/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          eventId,
+          fbp: getFbp(),
+          fbc: getFbc(),
+        }),
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
         setError(json.error?.message || json.message || "Failed to send message");
         return;
       }
-      trackLead("contact_form");
+      trackLead("contact_form", eventId);
       setSent(true);
     } catch {
       setError(isRtl ? "فشل إرسال الرسالة" : "Failed to send message");

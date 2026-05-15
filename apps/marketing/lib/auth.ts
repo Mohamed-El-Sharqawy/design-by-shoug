@@ -28,7 +28,7 @@ interface AuthStore {
     firstName?: string;
     lastName?: string;
     phone?: string;
-  }) => Promise<void>;
+  }) => Promise<string | undefined>;
   logout: () => void;
   fetchProfile: () => Promise<void>;
   hydrate: () => Promise<void>;
@@ -96,10 +96,19 @@ export const useAuth = create<AuthStore>()(
       register: async (data) => {
         set({ loading: true });
         try {
+          const { getFbp, getFbc } = await import("./meta-cookies");
+          const fbp = getFbp();
+          const fbc = getFbc();
+          const eventId = `register_${Date.now()}_${Math.random().toString(36).slice(2)}`;
           const res = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
+            body: JSON.stringify({
+              ...data,
+              eventId,
+              fbp,
+              fbc,
+            }),
           });
           const json = await res.json();
           if (!json.success) {
@@ -110,6 +119,7 @@ export const useAuth = create<AuthStore>()(
           set({ token, user: { ...user, emailVerified: false }, loading: false });
           setAuthCookie(token);
           await mergeLocalCartToServer(token);
+          return eventId;
         } catch (err) {
           set({ loading: false });
           throw err;

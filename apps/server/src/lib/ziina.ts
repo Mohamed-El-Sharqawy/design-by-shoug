@@ -137,4 +137,4 @@ export function verifyWebhookSignature(
   );
 }
 
-export { ZiinaPaymentIntent as PaymentIntent };
+export type { ZiinaPaymentIntent as PaymentIntent };
