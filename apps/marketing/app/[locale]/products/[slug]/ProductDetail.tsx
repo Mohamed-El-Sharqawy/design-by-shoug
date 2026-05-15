@@ -234,9 +234,6 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
 
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-white min-h-screen max-sm:pb-24">
-      {images.map((img, idx) => (
-        <link key={img.id} rel="prefetch" as="image" href={img.url} />
-      ))}
       <CartAddedPopup item={popupItem} open={popupOpen} onClose={() => setPopupOpen(false)} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <a
@@ -262,16 +259,19 @@ export function ProductDetail({ product, locale, relatedProducts }: ProductDetai
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
           <div className="space-y-4">
             <div className="relative aspect-3/4 overflow-hidden bg-[#FAF9F7] rounded-xl">
-              {images[selectedImageIdx] ? (
+              {images.length > 0 ? images.map((img, idx) => (
                 <Image
-                  src={images[selectedImageIdx].url}
+                  key={img.id}
+                  src={img.url}
                   alt={name}
                   fill
-                  className="object-cover object-center"
+                  className={`object-cover object-center transition-opacity duration-300 ${
+                    idx === selectedImageIdx ? "opacity-100" : "opacity-0"
+                  }`}
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
+                  priority={idx === 0}
                 />
-              ) : (
+              )) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-[#C4C4C4] text-sm">{t("noImage")}</span>
                 </div>

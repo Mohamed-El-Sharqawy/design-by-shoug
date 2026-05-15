@@ -179,7 +179,7 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
       <div className="fixed inset-0 bg-black/50 z-80" onClick={onClose} />
       <div className="fixed inset-0 z-80 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="relative bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto pointer-events-auto shadow-2xl"
+          className="relative bg-white w-full max-w-5xl max-h-[90vh] overflow-y-auto pointer-events-auto shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -195,17 +195,20 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2">
             <div className="bg-[#FAF9F7]">
-              <div className="relative aspect-3/4 sm:aspect-auto sm:min-h-[500px]">
-                {images[selectedImageIdx] ? (
+              <div className="relative aspect-3/4 sm:aspect-auto sm:min-h-[650px]">
+                {images.length > 0 ? images.map((img, idx) => (
                   <Image
-                    src={images[selectedImageIdx].url}
+                    key={img.id}
+                    src={img.url}
                     alt={name}
                     fill
-                    className="object-cover object-center"
+                    className={`object-cover object-center transition-opacity duration-300 ${
+                      idx === selectedImageIdx ? "opacity-100" : "opacity-0"
+                    }`}
                     sizes="(max-width: 640px) 100vw, 50vw"
-                    priority
+                    priority={idx === 0}
                   />
-                ) : (
+                )) : (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-[#C4C4C4] text-sm">{t("noImage")}</span>
                   </div>
