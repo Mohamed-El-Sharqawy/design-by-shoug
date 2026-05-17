@@ -1,6 +1,6 @@
 {
   "Header": {
-    "announcement": "Complimentary Shipping on All Orders",
+    "announcement": "Free express shipping on orders above 1000 AED",
     "collections": "Collections",
     "newArrivals": "New Arrivals",
     "about": "About",
@@ -10,7 +10,6 @@
     "searchPlaceholder": "Search for products, collections...",
     "noResults": "No results found",
     "products": "Products",
-    "collections": "Collections",
     "viewAll": "View All",
     "closeMenu": "Close menu",
     "closeSearch": "Close search",
@@ -128,7 +127,6 @@
     "title": "Shopping Cart",
     "empty": "Your cart is empty",
     "emptyDesc": "Looks like you haven't added anything to your cart yet.",
-    "continueShopping": "Continue Shopping",
     "subtotal": "Subtotal",
     "shipping": "Shipping",
     "shippingCalculated": "Calculated at checkout",
@@ -142,8 +140,7 @@
     "freeShipping": "Free Shipping",
     "viewCart": "View Cart",
     "continueShopping": "Continue Shopping",
-    "addedPopupTitle": "Added to Cart",
-    "checkout": "Checkout"
+    "addedPopupTitle": "Added to Cart"
   },
   "Product": {
     "new": "New",
@@ -691,22 +688,19 @@
     "unlimited": "Unlimited"
   },
   "shipping": {
-    "title": "Shipping Zones",
-    "addZone": "Add Zone",
-    "editZone": "Edit Zone",
-    "name": "Name",
-    "nameEn": "Name (English)",
-    "nameAr": "Name (Arabic)",
-    "countries": "Countries",
-    "cities": "Cities",
-    "baseCost": "Base Cost",
+    "title": "Shipping Cities",
+    "addCity": "Add City",
+    "editCity": "Edit City",
+    "cityNameEn": "City Name (English)",
+    "cityNameAr": "City Name (Arabic)",
+    "baseCost": "Shipping Cost",
     "freeShippingMin": "Free Shipping Min",
     "estimatedDays": "Estimated Days",
-    "commaSeparated": "Comma-separated",
     "minDays": "Min Days",
     "maxDays": "Max Days",
     "days": "days",
-    "noFreeShipping": "No free shipping"
+    "noFreeShipping": "No free shipping",
+    "confirmDelete": "Are you sure you want to delete this city?"
   },
   "colors": {
     "title": "Colors",

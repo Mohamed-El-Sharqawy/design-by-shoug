@@ -1,6 +1,6 @@
 {
   "Header": {
-    "announcement": "شحن مجاني على جميع الطلبات",
+    "announcement": "شحن سريع ومجاني للطلبات فوق 1000 درهم",
     "collections": "المجموعات",
     "newArrivals": "وصل حديثاً",
     "about": "من نحن",
@@ -10,7 +10,6 @@
     "searchPlaceholder": "ابحث عن منتجات، مجموعات...",
     "noResults": "لا توجد نتائج",
     "products": "المنتجات",
-    "collections": "المجموعات",
     "viewAll": "عرض الكل",
     "closeMenu": "إغلاق القائمة",
     "closeSearch": "إغلاق البحث",
@@ -141,9 +140,7 @@
     "color": "اللون",
     "freeShipping": "شحن مجاني",
     "viewCart": "عرض السلة",
-    "continueShopping": "متابعة التسوق",
-    "addedPopupTitle": "تمت الإضافة إلى السلة",
-    "checkout": "إتمام الشراء"
+    "addedPopupTitle": "تمت الإضافة إلى السلة"
   },
   "Product": {
     "new": "جديد",
@@ -691,22 +688,19 @@
     "unlimited": "غير محدود"
   },
   "shipping": {
-    "title": "مناطق الشحن",
-    "addZone": "إضافة منطقة",
-    "editZone": "تعديل المنطقة",
-    "name": "الاسم",
-    "nameEn": "الاسم (إنجليزي)",
-    "nameAr": "الاسم (عربي)",
-    "countries": "الدول",
-    "cities": "المدن",
+    "title": "مدن الشحن",
+    "addCity": "إضافة مدينة",
+    "editCity": "تعديل المدينة",
+    "cityNameEn": "اسم المدينة (إنجليزي)",
+    "cityNameAr": "اسم المدينة (عربي)",
     "baseCost": "تكلفة الشحن",
     "freeShippingMin": "الحد الأدنى للشحن المجاني",
     "estimatedDays": "أيام التوصيل المتوقعة",
-    "commaSeparated": "مفصولة بفواصل",
     "minDays": "أقل أيام",
     "maxDays": "أكثر أيام",
     "days": "أيام",
-    "noFreeShipping": "لا يوجد شحن مجاني"
+    "noFreeShipping": "لا يوجد شحن مجاني",
+    "confirmDelete": "هل أنت متأكد من حذف هذه المدينة؟"
   },
   "colors": {
     "title": "الألوان",

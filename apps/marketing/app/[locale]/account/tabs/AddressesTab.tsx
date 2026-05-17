@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { useState, useEffect } from "react";
 import {
   useAddresses,
   useCreateAddress,
@@ -9,12 +9,13 @@ import {
   useDeleteAddress,
   type Address,
 } from "@repo/api-client";
+import { fetchShippingCities, type ShippingCity, UAE_CITIES_FALLBACK } from "@/lib/uae-cities";
 
 const emptyForm = {
   label: "",
   fullName: "",
   phone: "",
-  country: "",
+  country: "United Arab Emirates",
   city: "",
   district: "",
   street: "",
@@ -26,6 +27,8 @@ const emptyForm = {
 
 export function AddressesTab() {
   const t = useTranslations("Account");
+  const locale = useLocale();
+  const isRtl = locale === "ar";
   const { data: addresses = [], isLoading: loading } = useAddresses();
   const createAddress = useCreateAddress();
   const updateAddress = useUpdateAddress();
@@ -33,6 +36,11 @@ export function AddressesTab() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [shippingCities, setShippingCities] = useState<ShippingCity[]>([]);
+
+  useEffect(() => {
+    fetchShippingCities().then(setShippingCities);
+  }, []);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -117,15 +125,43 @@ export function AddressesTab() {
             </div>
             <div>
               <label className="block text-xs tracking-widest uppercase text-[#8B7355] mb-1.5">{t("phone")} *</label>
-              <input required value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} dir="ltr" className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A]" />
+              <div className="flex" dir="ltr">
+                <span className="inline-flex items-center px-3 py-2.5 border border-e-0 border-[#E8E4DF] bg-[#f5f4f2] text-sm text-[#999] font-light select-none">+971</span>
+                <input
+                  required
+                  type="tel"
+                  maxLength={9}
+                  value={form.phone.replace(/^\+971/, "")}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 9);
+                    setForm((f) => ({ ...f, phone: `+971${digits}` }));
+                  }}
+                  placeholder="501234567"
+                  dir="ltr"
+                  className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A]"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs tracking-widest uppercase text-[#8B7355] mb-1.5">{t("country")} *</label>
-              <input required value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))} className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A]" />
+              <input required readOnly value="United Arab Emirates" className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light bg-[#f5f4f2] cursor-default" />
+              <input type="hidden" value={form.country} />
             </div>
             <div>
               <label className="block text-xs tracking-widest uppercase text-[#8B7355] mb-1.5">{t("city")} *</label>
-              <input required value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A]" />
+              <select
+                required
+                value={form.city}
+                onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A] bg-white"
+              >
+                <option value="">{isRtl ? "اختر المدينة" : "Select city"}</option>
+                {(shippingCities.length > 0 ? shippingCities : UAE_CITIES_FALLBACK).map((c) => (
+                  <option key={c.id} value={c.nameEn}>
+                    {isRtl ? c.nameAr : c.nameEn}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs tracking-widest uppercase text-[#8B7355] mb-1.5">{t("district")}</label>
