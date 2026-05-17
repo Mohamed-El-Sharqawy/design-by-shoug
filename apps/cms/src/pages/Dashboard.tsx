@@ -36,6 +36,7 @@ interface AnalyticsData {
   orders: { total: number; averagePerDay: number }
   internationalOrders: { total: number; topCountry: string | null }
   revenue: { total: number }
+  pendingCOD: { orders: number; revenue: number }
   customers: { newCount: number; returningCount: number }
   topProduct: { name: string; sales: number } | null
   revenueTrend: { date: string; revenue: number }[]
@@ -49,7 +50,11 @@ interface AnalyticsData {
     countPercentage: number
   }[]
   newCustomersOverTime: { date: string; customers: number }[]
-  topCountries: { country: string; orders: number }[]
+  topLocations: {
+    country: string
+    orders: number
+    cities: { city: string; orders: number }[]
+  }[]
   productTypes: { type: string; sales: number }[]
   delivery: { totalDelivered: number; totalOrders: number }
 }
@@ -194,7 +199,7 @@ export function DashboardPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard
           icon={ShoppingCart}
           iconBg="bg-blue-500"
@@ -218,7 +223,14 @@ export function DashboardPage() {
           iconBg="bg-green-500"
           label="Total Revenue"
           value={`AED ${(analytics?.revenue.total ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          subtitle="Total revenue for the period"
+          subtitle="Paid revenue for the period"
+        />
+        <StatCard
+          icon={DollarSign}
+          iconBg="bg-yellow-500"
+          label="Pending COD Revenue"
+          value={`AED ${(analytics?.pendingCOD.revenue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+          subtitle={`${analytics?.pendingCOD.orders ?? 0} pending COD orders`}
         />
         <StatCard
           icon={UserPlus}
@@ -548,22 +560,37 @@ export function DashboardPage() {
 
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Top Selling Countries */}
+        {/* Top Locations */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-slate-900">Top Selling Countries</h2>
+            <h2 className="text-sm font-semibold text-slate-900">Top Locations</h2>
             <button className="flex items-center gap-1 px-2 py-1 text-xs text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
               <Download className="w-3 h-3" />
               Export
             </button>
           </div>
-          <p className="text-xs text-slate-500 mb-4">Order distribution by country</p>
-          {analytics?.topCountries && analytics.topCountries.length > 0 ? (
-            <div className="space-y-3">
-              {analytics.topCountries.map((c) => (
-                <div key={c.country} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <span className="text-sm font-medium text-slate-900">{c.country}</span>
-                  <span className="text-xs text-slate-500">{c.orders} orders</span>
+          <p className="text-xs text-slate-500 mb-4">Order distribution by country &amp; city</p>
+          {analytics?.topLocations && analytics.topLocations.length > 0 ? (
+            <div className="space-y-4">
+              {analytics.topLocations.map((loc) => (
+                <div key={loc.country}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-slate-900">{loc.country}</span>
+                    <span className="text-xs font-medium text-slate-500">{loc.orders} orders</span>
+                  </div>
+                  {loc.cities.length > 0 && (
+                    <div className="ml-3 space-y-1.5">
+                      {loc.cities.slice(0, 5).map((c) => (
+                        <div key={c.city} className="flex items-center justify-between">
+                          <span className="text-xs text-slate-500">{c.city}</span>
+                          <span className="text-xs text-slate-400">{c.orders}</span>
+                        </div>
+                      ))}
+                      {loc.cities.length > 5 && (
+                        <span className="text-xs text-indigo-600">+{loc.cities.length - 5} more cities</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -613,6 +640,12 @@ export function DashboardPage() {
               <span className="text-xs text-slate-500">Total Revenue</span>
               <span className="text-sm font-semibold text-slate-900">
                 AED {(analytics?.revenue.total ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+              <span className="text-xs text-yellow-600">Pending COD Revenue</span>
+              <span className="text-sm font-semibold text-yellow-700">
+                AED {(analytics?.pendingCOD.revenue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">

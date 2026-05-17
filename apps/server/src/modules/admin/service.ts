@@ -22,7 +22,7 @@ export abstract class AdminService {
       where: { createdAt: { gte: start, lte: end } },
       include: {
         items: true,
-        address: { select: { country: true } },
+        address: { select: { country: true, city: true } },
       },
     });
 
@@ -128,16 +128,38 @@ export abstract class AdminService {
       Array.from(intCountryMap.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ||
       null;
 
-    const countryMap = new Map<string, number>();
+    const countryCityMap = new Map<string, Map<string, number>>();
     orders.forEach((o) => {
-      const c = o.address?.country || "Unknown";
-      countryMap.set(c, (countryMap.get(c) || 0) + 1);
+      const country = o.address?.country || "Unknown";
+      const city = o.address?.city || "Unknown";
+      if (!countryCityMap.has(country)) {
+        countryCityMap.set(country, new Map());
+      }
+      const cities = countryCityMap.get(country)!;
+      cities.set(city, (cities.get(city) || 0) + 1);
     });
-    const topCountries = Array.from(countryMap.entries())
+    const topLocations = Array.from(countryCityMap.entries())
       .filter(([country]) => country !== "Unknown")
-      .map(([country, orderCount]) => ({ country, orders: orderCount }))
+      .map(([country, cities]) => {
+        const totalOrders = Array.from(cities.values()).reduce((s, c) => s + c, 0);
+        const cityList = Array.from(cities.entries())
+          .filter(([city]) => city !== "Unknown")
+          .map(([city, orderCount]) => ({ city, orders: orderCount }))
+          .sort((a, b) => b.orders - a.orders);
+        return { country, orders: totalOrders, cities: cityList };
+      })
       .sort((a, b) => b.orders - a.orders)
       .slice(0, 10);
+
+    const pendingCODOrders = orders.filter(
+      (o) =>
+        o.paymentMethod === "CASH_ON_DELIVERY" &&
+        o.paymentStatus === "PENDING"
+    );
+    const pendingCODRevenue = pendingCODOrders.reduce(
+      (sum, o) => sum + Number(o.total),
+      0
+    );
 
     const userIds = [
       ...new Set(orders.map((o) => o.userId).filter(Boolean)),
@@ -214,6 +236,10 @@ export abstract class AdminService {
         topCountry: topIntCountry,
       },
       revenue: { total: Math.round(totalRevenue * 100) / 100 },
+      pendingCOD: {
+        orders: pendingCODOrders.length,
+        revenue: Math.round(pendingCODRevenue * 100) / 100,
+      },
       customers: { newCount: newCustomerCount, returningCount },
       topProduct,
       revenueTrend,
@@ -221,7 +247,7 @@ export abstract class AdminService {
       topProducts,
       paymentMethods,
       newCustomersOverTime,
-      topCountries,
+      topLocations,
       productTypes,
       delivery: {
         totalDelivered: deliveredOrders.length,
