@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCartItems, useCartSubtotal, useClearCart, type CartItemLocal } from "@/lib/cart-hooks";
 import { useAuth } from "@/lib/auth";
@@ -41,7 +41,7 @@ interface DirectItem {
   variantLabel: string;
 }
 
-type Step = "address" | "payment" | "review";
+type Step = "address" | "review";
 
 const STORAGE_KEY = "dbs_checkout";
 
@@ -93,6 +93,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   const cartSubtotal = useCartSubtotal();
   const clearCart = useClearCart();
   const searchParams = useSearchParams();
+  const addressFormRef = useRef<HTMLFormElement>(null);
 
   const buyNowVariantId = searchParams.get("variant");
   const buyNowQty = searchParams.get("qty") ? parseInt(searchParams.get("qty")!) : 1;
@@ -245,7 +246,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   const handleAddAddress = (e: React.FormEvent) => {
     e.preventDefault();
     if (isGuest) {
-      setStep("payment");
+      setStep("review");
       return;
     }
     createAddress.mutate(
@@ -413,7 +414,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
 
   if (orderResult) {
     return (
-      <section className="py-16 sm:py-24 bg-white min-h-screen">
+      <section className="bg-white min-h-[60vh] md:min-h-[70vh] flex items-center justify-center">
         <div className="max-w-lg mx-auto px-4 sm:px-6 text-center">
           <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-green-50 flex items-center justify-center">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -536,7 +537,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
                   )}
 
                   {showNewAddress && (
-                    <form onSubmit={handleAddAddress} className="p-6 border border-[#E8E4DF] bg-[#FAF9F7] mb-6">
+                    <form ref={addressFormRef} onSubmit={handleAddAddress} className="p-6 border border-[#E8E4DF] bg-[#FAF9F7] mb-6">
                       <h3 className="text-sm tracking-widest uppercase text-[#1A1A1A] mb-4">{t("newAddress")}</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -600,107 +601,89 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
                           <input value={newAddress.apartment} onChange={(e) => setNewAddress((a) => ({ ...a, apartment: e.target.value }))} className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A]" />
                         </div>
                       </div>
-                      <div className="flex gap-3 mt-6">
-                        <button type="submit" className="px-6 py-2.5 bg-[#1A1A1A] text-white text-xs tracking-widest uppercase font-light hover:bg-[#333] transition-colors">{isGuest ? t("paymentMethod") : t("save")}</button>
-                        {!isGuest && (
-                          <button type="button" onClick={() => setShowNewAddress(false)} className="px-6 py-2.5 border border-[#E8E4DF] text-[#1A1A1A] text-xs tracking-widest uppercase font-light hover:border-[#1A1A1A] transition-colors">{t("cancel")}</button>
-                        )}
-                      </div>
                     </form>
                   )}
+
+                  <div className="mt-6 pt-6 border-t border-[#E8E4DF]">
+                    {isGuest && (
+                      <div className="mb-6">
+                        <label className="block text-xs tracking-widest uppercase text-[#8B7355] mb-1.5">{t("email")}</label>
+                        <input
+                          type="email"
+                          value={guestEmail}
+                          onChange={(e) => setGuestEmail(e.target.value)}
+                          placeholder={t("emailPlaceholder")}
+                          className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A]"
+                        />
+                      </div>
+                    )}
+
+                    <h3 className="text-sm tracking-widest uppercase text-[#1A1A1A] mb-4">{t("paymentMethod")}</h3>
+                    <div className="space-y-3 mb-6">
+                      <label
+                        className={`flex items-start gap-3 p-4 border cursor-pointer transition-colors ${paymentMethod === "CASH_ON_DELIVERY"
+                          ? "border-[#1A1A1A] bg-[#FAF9F7]"
+                          : "border-[#E8E4DF] hover:border-[#999]"
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          name="payment"
+                          checked={paymentMethod === "CASH_ON_DELIVERY"}
+                          onChange={() => setPaymentMethod("CASH_ON_DELIVERY")}
+                          className="mt-1 w-4 h-4 accent-[#1A1A1A] shrink-0"
+                        />
+                        <div>
+                          <p className="text-sm text-[#1A1A1A] font-light">{t("cashOnDelivery")}</p>
+                          <p className="text-xs text-[#999] font-light mt-0.5">{t("cashOnDeliveryDesc")}</p>
+                        </div>
+                      </label>
+                      <label
+                        className={`flex items-start gap-3 p-4 border cursor-pointer transition-colors ${paymentMethod === "CREDIT_CARD"
+                          ? "border-[#1A1A1A] bg-[#FAF9F7]"
+                          : "border-[#E8E4DF] hover:border-[#999]"
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          name="payment"
+                          checked={paymentMethod === "CREDIT_CARD"}
+                          onChange={() => setPaymentMethod("CREDIT_CARD")}
+                          className="mt-1 w-4 h-4 accent-[#1A1A1A] shrink-0"
+                        />
+                        <div>
+                          <p className="text-sm text-[#1A1A1A] font-light">{t("creditCard")}</p>
+                          <p className="text-xs text-[#999] font-light mt-0.5">{t("creditCardDesc")}</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="mb-6">
+                      <label className="block text-xs tracking-widest uppercase text-[#8B7355] mb-1.5">{t("orderNotes")}</label>
+                      <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder={t("orderNotesPlaceholder")}
+                        rows={3}
+                        className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A] resize-none"
+                      />
+                    </div>
+                  </div>
 
                   <div className="flex justify-end">
                     <button
                       type="button"
                       disabled={!selectedAddressId && !guestAddressReady}
-                      onClick={() => setStep("payment")}
+                      onClick={() => {
+                        if (isGuest && showNewAddress && addressFormRef.current) {
+                          addressFormRef.current.requestSubmit();
+                        } else if (!isGuest && showNewAddress) {
+                          addressFormRef.current?.requestSubmit();
+                        } else {
+                          setStep("review");
+                        }
+                      }}
                       className="px-8 py-3.5 bg-[#1A1A1A] text-white text-xs tracking-widest uppercase font-light hover:bg-[#333] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {t("paymentMethod")}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {step === "payment" && (
-                <div>
-                  <h2 className="font-serif text-2xl text-[#1A1A1A] tracking-wide mb-6">{t("paymentMethod")}</h2>
-
-                  {isGuest && (
-                    <div className="mb-6">
-                      <label className="block text-xs tracking-widest uppercase text-[#8B7355] mb-1.5">{t("email")}</label>
-                      <input
-                        type="email"
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                        placeholder={t("emailPlaceholder")}
-                        className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A]"
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-3 mb-8">
-                    <label
-                      className={`flex items-start gap-3 p-4 border cursor-pointer transition-colors ${paymentMethod === "CASH_ON_DELIVERY"
-                        ? "border-[#1A1A1A] bg-[#FAF9F7]"
-                        : "border-[#E8E4DF] hover:border-[#999]"
-                        }`}
-                    >
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={paymentMethod === "CASH_ON_DELIVERY"}
-                        onChange={() => setPaymentMethod("CASH_ON_DELIVERY")}
-                        className="mt-1 w-4 h-4 accent-[#1A1A1A] shrink-0"
-                      />
-                      <div>
-                        <p className="text-sm text-[#1A1A1A] font-light">{t("cashOnDelivery")}</p>
-                        <p className="text-xs text-[#999] font-light mt-0.5">{t("cashOnDeliveryDesc")}</p>
-                      </div>
-                    </label>
-                    <label
-                      className={`flex items-start gap-3 p-4 border cursor-pointer transition-colors ${paymentMethod === "CREDIT_CARD"
-                        ? "border-[#1A1A1A] bg-[#FAF9F7]"
-                        : "border-[#E8E4DF] hover:border-[#999]"
-                        }`}
-                    >
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={paymentMethod === "CREDIT_CARD"}
-                        onChange={() => setPaymentMethod("CREDIT_CARD")}
-                        className="mt-1 w-4 h-4 accent-[#1A1A1A] shrink-0"
-                      />
-                      <div>
-                        <p className="text-sm text-[#1A1A1A] font-light">{t("creditCard")}</p>
-                        <p className="text-xs text-[#999] font-light mt-0.5">{t("creditCardDesc")}</p>
-                      </div>
-                    </label>
-                  </div>
-
-                  <div className="mb-8">
-                    <label className="block text-xs tracking-widest uppercase text-[#8B7355] mb-1.5">{t("orderNotes")}</label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder={t("orderNotesPlaceholder")}
-                      rows={3}
-                      className="w-full px-3 py-2.5 border border-[#E8E4DF] text-sm font-light focus:outline-none focus:border-[#1A1A1A] resize-none"
-                    />
-                  </div>
-
-                  <div className="flex justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setStep("address")}
-                      className="px-6 py-3.5 border border-[#E8E4DF] text-[#1A1A1A] text-xs tracking-widest uppercase font-light hover:border-[#1A1A1A] transition-colors"
-                    >
-                      {t("shippingAddress")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStep("review")}
-                      className="px-8 py-3.5 bg-[#1A1A1A] text-white text-xs tracking-widest uppercase font-light hover:bg-[#333] transition-colors"
                     >
                       {t("orderSummary")}
                     </button>
@@ -768,10 +751,10 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
                   <div className="flex justify-between">
                     <button
                       type="button"
-                      onClick={() => setStep("payment")}
+                      onClick={() => setStep("address")}
                       className="px-6 py-3.5 border border-[#E8E4DF] text-[#1A1A1A] text-xs tracking-widest uppercase font-light hover:border-[#1A1A1A] transition-colors"
                     >
-                      {t("paymentMethod")}
+                      {t("shippingAddress")}
                     </button>
                     <button
                       type="button"
@@ -875,8 +858,7 @@ function DirectItemRow({ item, isRtl, formatPrice }: { item: DirectItem; isRtl: 
 function StepIndicator({ step, setStep, t }: { step: Step; setStep: (s: Step) => void; t: (k: string) => string }) {
   const steps: { key: Step; label: string; num: number }[] = [
     { key: "address", label: t("shippingAddress"), num: 1 },
-    { key: "payment", label: t("paymentMethod"), num: 2 },
-    { key: "review", label: t("orderSummary"), num: 3 },
+    { key: "review", label: t("orderSummary"), num: 2 },
   ];
 
   const currentIndex = steps.findIndex((s) => s.key === step);
