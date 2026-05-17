@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useCartItems, useCartSubtotal, useClearCart, type CartItemLocal } from "@/lib/cart-hooks";
 import { useAuth } from "@/lib/auth";
 import { EmailVerificationModal } from "@/components/EmailVerificationModal";
@@ -93,11 +93,14 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   const cartSubtotal = useCartSubtotal();
   const clearCart = useClearCart();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const addressFormRef = useRef<HTMLFormElement>(null);
 
   const buyNowVariantId = searchParams.get("variant");
   const buyNowQty = searchParams.get("qty") ? parseInt(searchParams.get("qty")!) : 1;
   const isBuyNow = !!buyNowVariantId;
+  const urlOrderId = searchParams.get("order_id");
 
   const isGuest = !token;
   const saved = loadCheckoutState();
@@ -115,7 +118,19 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   const [shippingCost, setShippingCost] = useState<number | null>(null);
   const [notes, setNotes] = useState((saved?.notes as string) || "");
   const [placing, setPlacing] = useState(false);
-  const [orderResult, setOrderResult] = useState<{ orderNumber: string; orderId: string } | null>(null);
+  const [orderResult, setOrderResult] = useState<{ orderNumber: string; orderId: string } | null>(
+    (() => {
+      if (!urlOrderId) return null;
+      try {
+        const raw = sessionStorage.getItem("dbs_order_result");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.orderId === urlOrderId) return parsed;
+        }
+      } catch { /* ignore */ }
+      return null;
+    })(),
+  );
   const [shippingCities, setShippingCities] = useState<ShippingCity[]>([]);
   const variantQuery = useProductVariant(isBuyNow ? buyNowVariantId : null);
   const directLoading = isBuyNow ? variantQuery.isLoading : false;
@@ -323,10 +338,13 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             eventId,
           );
           clearCheckoutState();
-          setOrderResult({
+          const result = {
             orderNumber: json.data.order.orderNumber,
             orderId: json.data.order.id,
-          });
+          };
+          sessionStorage.setItem("dbs_order_result", JSON.stringify(result));
+          router.replace(`${pathname}?order_id=${json.data.order.id}`, { scroll: false });
+          setOrderResult(result);
         } else {
           const msg = json.data?.message || json.message || "Order failed";
           setCouponError(msg);
@@ -365,10 +383,13 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             eventId,
           );
           clearCheckoutState();
-          setOrderResult({
+          const result = {
             orderNumber: json.data.order.orderNumber,
             orderId: json.data.order.id,
-          });
+          };
+          sessionStorage.setItem("dbs_order_result", JSON.stringify(result));
+          router.replace(`${pathname}?order_id=${json.data.order.id}`, { scroll: false });
+          setOrderResult(result);
         } else {
           const msg = json.data?.message || json.message || "Order failed";
           setCouponError(msg);
@@ -385,7 +406,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
 
   if (directLoading) {
     return (
-      <section className="py-16 sm:py-24 bg-white min-h-screen">
+      <section className="bg-white min-h-[60vh] md:min-h-[70vh] flex items-center justify-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="w-8 h-8 mx-auto border-2 border-[#E8E4DF] border-t-[#8B7355] rounded-full animate-spin" />
         </div>
@@ -395,7 +416,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
 
   if (isEmpty && !orderResult) {
     return (
-      <section className="py-16 sm:py-24 bg-white min-h-screen">
+      <section className="bg-white min-h-[60vh] md:min-h-[70vh] flex items-center justify-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="font-serif text-3xl sm:text-4xl text-[#1A1A1A] tracking-wide mb-4">
             {t("title")}
@@ -465,7 +486,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
 
   return (
     <>
-      <section className="py-16 sm:py-20 bg-white min-h-screen">
+      <section className="py-16 sm:py-20 bg-white min-h-[60vh] md:min-h-[70vh]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-10">
             {!isBuyNow && (
