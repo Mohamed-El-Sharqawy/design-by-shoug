@@ -20,6 +20,7 @@ import { uploadRoutes } from "@/modules/upload";
 import { searchRoutes } from "@/modules/search";
 import { contactRoutes } from "@/modules/contact";
 import { addressRoutes } from "@/modules/addresses";
+import { metaRoutes } from "@/modules/meta";
 
 const app = new Elysia()
   .use(errorHandler)
@@ -74,6 +75,7 @@ const app = new Elysia()
   .use(searchRoutes)
   .use(contactRoutes)
   .use(addressRoutes)
+  .use(metaRoutes)
   .listen(process.env.PORT || 3001);
 
 console.log(

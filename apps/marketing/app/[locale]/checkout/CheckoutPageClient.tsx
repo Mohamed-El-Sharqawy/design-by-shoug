@@ -242,13 +242,6 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
         if (json.success && json.data?.order) {
           const eventId = `order_${json.data.order.id}`;
           if (json.data.checkoutUrl) {
-            trackPurchase(
-              json.data.order.orderNumber,
-              total,
-              [directItem.productId],
-              directItem.quantity,
-              eventId,
-            );
             window.location.href = json.data.checkoutUrl;
             return;
           }
@@ -289,13 +282,6 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
           const eventId = `order_${json.data.order.id}`;
           if (json.data.checkoutUrl) {
             clearCart.mutate();
-            trackPurchase(
-              json.data.order.orderNumber,
-              total,
-              items.map((i) => i.productId),
-              items.reduce((s, i) => s + i.quantity, 0),
-              eventId,
-            );
             window.location.href = json.data.checkoutUrl;
             return;
           }

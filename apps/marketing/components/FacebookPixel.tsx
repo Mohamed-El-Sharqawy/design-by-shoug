@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import { trackServerEvent } from "@/lib/meta-capi-client";
 
 const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
 
@@ -14,7 +15,9 @@ declare global {
 
 function pageview() {
   if (typeof window !== "undefined" && window.fbq) {
-    window.fbq("track", "PageView");
+    const eventId = `pv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    window.fbq("track", "PageView", {}, { eventID: eventId });
+    trackServerEvent("PageView", eventId);
   }
 }
 

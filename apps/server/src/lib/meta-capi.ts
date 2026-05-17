@@ -18,6 +18,7 @@ export interface MetaEventPayload {
   phone?: string;
   firstName?: string;
   lastName?: string;
+  externalId?: string;
   ip?: string;
   userAgent?: string;
   fbp?: string;
@@ -46,6 +47,7 @@ export async function sendMetaEvent(payload: MetaEventPayload): Promise<void> {
   if (payload.userAgent) userData.client_user_agent = payload.userAgent;
   if (payload.fbp) userData.fbp = payload.fbp;
   if (payload.fbc) userData.fbc = payload.fbc;
+  if (payload.externalId) userData.external_id = sha256(payload.externalId);
 
   const customData: Record<string, unknown> = {};
   if (payload.value !== undefined) customData.value = payload.value;
