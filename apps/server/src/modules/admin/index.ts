@@ -19,6 +19,18 @@ export const adminRoutes = new Elysia({ prefix: "/admin" })
     { body: AdminLoginBody }
   )
   .use(requireAdmin)
+  .get("/analytics", async ({ query }) => {
+    const analytics = await AdminService.getAnalytics(
+      query.startDate,
+      query.endDate
+    );
+    return { success: true, data: analytics };
+  }, {
+    query: t.Object({
+      startDate: t.Optional(t.String()),
+      endDate: t.Optional(t.String()),
+    }),
+  })
   .get("/stats", async () => {
     const stats = await AdminService.getStats();
     return { success: true, data: stats };
