@@ -127,7 +127,6 @@ export function trackPurchase(
     order_id: orderNumber,
   };
   trackEvent("Purchase", params, eventId);
-  trackServerEvent("Purchase", eventId, params);
 }
 
 export function trackSearch(query: string, productIds: string[]) {
@@ -148,7 +147,6 @@ export function trackCompleteRegistration(name: string, eventID?: string) {
     content_name: name,
   };
   trackEvent("CompleteRegistration", params, eventId);
-  trackServerEvent("CompleteRegistration", eventId, params);
 }
 
 export function trackLogin() {
@@ -176,7 +174,6 @@ export function trackLead(source: string, eventID?: string) {
   const eventId = eventID || uid();
   const params = { content_name: source };
   trackEvent("Lead", params, eventId);
-  trackServerEvent("Lead", eventId, params);
 }
 
 export function trackSubscribe() {

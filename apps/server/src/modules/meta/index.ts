@@ -49,6 +49,8 @@ export const metaRoutes = new Elysia({ prefix: "/meta", tags: ["Meta"] })
         }
       }
 
+      const cd = body.customData as Record<string, unknown> | undefined;
+
       try {
         await sendMetaEvent({
           eventName: body.eventName,
@@ -64,23 +66,23 @@ export const metaRoutes = new Elysia({ prefix: "/meta", tags: ["Meta"] })
           fbp: body.fbp,
           fbc: body.fbc,
           value:
-            typeof body.customData?.value === "number"
-              ? body.customData.value
+            typeof cd?.value === "number"
+              ? cd.value
               : undefined,
           currency:
-            typeof body.customData?.currency === "string"
-              ? body.customData.currency
+            typeof cd?.currency === "string"
+              ? cd.currency
               : undefined,
-          contentIds: Array.isArray(body.customData?.content_ids)
-            ? body.customData.content_ids
+          contentIds: Array.isArray(cd?.content_ids)
+            ? (cd.content_ids as string[])
             : undefined,
           contentType:
-            typeof body.customData?.content_type === "string"
-              ? body.customData.content_type
+            typeof cd?.content_type === "string"
+              ? cd.content_type
               : undefined,
           numItems:
-            typeof body.customData?.num_items === "number"
-              ? body.customData.num_items
+            typeof cd?.num_items === "number"
+              ? cd.num_items
               : undefined,
         });
       } catch (err) {

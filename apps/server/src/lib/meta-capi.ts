@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 
 const META_PIXEL_ID = process.env.META_PIXEL_ID;
 const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
+const META_TEST_EVENT_CODE = process.env.META_TEST_EVENT_CODE;
 
 function sha256(value: string): string {
   return crypto
@@ -56,7 +57,7 @@ export async function sendMetaEvent(payload: MetaEventPayload): Promise<void> {
   if (payload.contentType) customData.content_type = payload.contentType;
   if (payload.numItems !== undefined) customData.num_items = payload.numItems;
 
-  const body = {
+  const body: Record<string, unknown> = {
     data: [
       {
         event_name: payload.eventName,
@@ -69,6 +70,7 @@ export async function sendMetaEvent(payload: MetaEventPayload): Promise<void> {
       },
     ],
     access_token: META_ACCESS_TOKEN,
+    ...(META_TEST_EVENT_CODE && { test_event_code: META_TEST_EVENT_CODE }),
   };
 
   try {
@@ -83,6 +85,9 @@ export async function sendMetaEvent(payload: MetaEventPayload): Promise<void> {
     if (!res.ok) {
       const text = await res.text();
       console.error(`[Meta CAPI] Error ${res.status}: ${text}`);
+    } else if (META_TEST_EVENT_CODE) {
+      const text = await res.text();
+      console.log(`[Meta CAPI] Test event sent (${payload.eventName}):`, text);
     }
   } catch (err) {
     console.error("[Meta CAPI] Request failed:", err);
