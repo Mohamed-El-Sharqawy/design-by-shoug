@@ -43,6 +43,7 @@ export function FacebookPixel() {
         s.parentNode.insertBefore(t,s)}(window, document,'script',
         'https://connect.facebook.net/en_US/fbevents.js');
         fbq('init', '${FB_PIXEL_ID}', {}, { autoConfig: false });
+        fbq('set', 'autoConfig', false, '${FB_PIXEL_ID}');
       `}
     </Script>
   );

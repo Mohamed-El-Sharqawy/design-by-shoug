@@ -44,6 +44,7 @@ interface DirectItem {
 type Step = "address" | "review";
 
 const STORAGE_KEY = "dbs_checkout";
+const INIT_CHECKOUT_KEY = "dbs_init_checkout_sent";
 
 function loadCheckoutState() {
   if (typeof window === "undefined") return null;
@@ -66,6 +67,7 @@ function saveCheckoutState(state: Record<string, unknown>) {
 function clearCheckoutState() {
   try {
     sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(INIT_CHECKOUT_KEY);
   } catch {
     /* ignore */
   }
@@ -165,10 +167,27 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   }, [step, newAddress, paymentMethod, guestEmail, couponCode, discount, selectedAddressId, notes]);
 
   useEffect(() => {
+    const contentKey = isBuyNow
+      ? `direct_${buyNowVariantId}_${buyNowQty}`
+      : `cart_${items.map((i) => `${i.variantId}_${i.quantity}`).join("|")}`;
+
+    try {
+      const stored = sessionStorage.getItem(INIT_CHECKOUT_KEY);
+      if (stored === contentKey) return;
+    } catch {
+      /* ignore */
+    }
+
     if (isBuyNow && directItem) {
       trackInitiateCheckoutDirect(directItem.productId, directItem.unitPrice, directItem.quantity);
     } else if (!isBuyNow && items.length > 0) {
       trackInitiateCheckout(items, cartSubtotal);
+    }
+
+    try {
+      sessionStorage.setItem(INIT_CHECKOUT_KEY, contentKey);
+    } catch {
+      /* ignore */
     }
   }, []);
 
