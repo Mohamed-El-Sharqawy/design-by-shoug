@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { trackServerEvent } from "@/lib/meta-capi-client";
 
 const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
+const isProduction = process.env.NODE_ENV === "production";
 
 declare global {
   interface Window {
@@ -14,6 +15,7 @@ declare global {
 }
 
 function pageview() {
+  if (!isProduction) return;
   if (typeof window !== "undefined" && window.fbq) {
     const eventId = `pv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     window.fbq("track", "PageView", {}, { eventID: eventId });
@@ -29,7 +31,7 @@ export function FacebookPixel() {
     pageview();
   }, [pathname, searchParams]);
 
-  if (!FB_PIXEL_ID) return null;
+  if (!FB_PIXEL_ID || !isProduction) return null;
 
   return (
     <Script id="fb-pixel" strategy="afterInteractive">
@@ -62,6 +64,7 @@ function isDuplicate(event: string, params?: Record<string, unknown>): boolean {
 }
 
 export function trackEvent(event: string, params?: Record<string, unknown>, eventID?: string) {
+  if (!isProduction) return;
   if (typeof window !== "undefined" && window.fbq) {
     if (isDuplicate(event, params)) return;
     if (eventID) {
@@ -73,6 +76,7 @@ export function trackEvent(event: string, params?: Record<string, unknown>, even
 }
 
 export function trackCustomEvent(event: string, params?: Record<string, unknown>, eventID?: string) {
+  if (!isProduction) return;
   if (typeof window !== "undefined" && window.fbq) {
     if (isDuplicate(event, params)) return;
     if (eventID) {
