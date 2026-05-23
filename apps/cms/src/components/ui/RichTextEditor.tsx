@@ -47,11 +47,10 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       title={title}
-      className={`p-1.5 rounded transition-colors ${
-        active
+      className={`p-1.5 rounded transition-colors ${active
           ? 'bg-slate-900 text-white'
           : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-      }`}
+        }`}
     >
       {children}
     </button>
@@ -101,7 +100,7 @@ export function RichTextEditor({
     if (sourceMode) return
     const currentHTML = editor.getHTML()
     if (value !== currentHTML) {
-      editor.commands.setContent(value || '', false)
+      editor.commands.setContent(value || '', { emitUpdate: false })
     }
   }, [value, editor, sourceMode])
 
@@ -113,7 +112,7 @@ export function RichTextEditor({
     if (sourceMode) {
       setSourceMode(false)
       if (editor && !editor.isDestroyed) {
-        editor.commands.setContent(sourceValue || '', false)
+        editor.commands.setContent(sourceValue || '', { emitUpdate: false })
         onChange(sourceValue)
       }
     } else {
