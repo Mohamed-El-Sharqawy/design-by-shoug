@@ -134,6 +134,7 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
   const name = isRtl ? product.nameAr : product.nameEn;
   const primaryImage = product.images?.find((img) => img.isPrimary) || product.images?.[0];
   const hasDiscount = product.salePrice && product.salePrice < product.basePrice;
+  const shortDesc = isRtl ? product.shortDescAr : product.shortDescEn;
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat(isRtl ? "ar-AE" : "en-AE", {
@@ -270,6 +271,13 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
               </div>
 
               <div className="w-full h-px bg-[#E8E4DF] my-5" />
+
+              {shortDesc && (
+                <div
+                  className="prose prose-sm max-w-none text-[#555] font-light leading-relaxed mb-4"
+                  dangerouslySetInnerHTML={{ __html: shortDesc }}
+                />
+              )}
 
               {!isSimpleProduct && lengths.length > 0 && (
                 <div className="mb-5">

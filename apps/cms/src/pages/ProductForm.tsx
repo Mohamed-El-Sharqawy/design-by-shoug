@@ -10,7 +10,7 @@ import {
   useCollections,
   useUploadImage,
 } from '@repo/api-client'
-import { ImageUpload } from '@/components/ui'
+import { ImageUpload, RichTextEditor } from '@/components/ui'
 import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react'
 import type { Color } from '@repo/types'
 
@@ -354,21 +354,41 @@ export function ProductFormPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('products.descriptionEn')}</label>
-                  <textarea value={form.descriptionEn} onChange={(e) => setForm({ ...form, descriptionEn: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none" rows={4} />
+                  <RichTextEditor
+                    value={form.descriptionEn}
+                    onChange={(html) => setForm({ ...form, descriptionEn: html })}
+                    placeholder="Product description (English)..."
+                    dir="ltr"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('products.descriptionAr')}</label>
-                  <textarea value={form.descriptionAr} onChange={(e) => setForm({ ...form, descriptionAr: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none" dir="rtl" rows={4} />
+                  <RichTextEditor
+                    value={form.descriptionAr}
+                    onChange={(html) => setForm({ ...form, descriptionAr: html })}
+                    placeholder="وصف المنتج (عربي)..."
+                    dir="rtl"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('products.shortDescEn', 'Short Description (EN)')}</label>
-                  <input type="text" value={form.shortDescEn} onChange={(e) => setForm({ ...form, shortDescEn: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none" />
+                  <RichTextEditor
+                    value={form.shortDescEn}
+                    onChange={(html) => setForm({ ...form, shortDescEn: html })}
+                    placeholder="Short description (English)..."
+                    dir="ltr"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('products.shortDescAr', 'Short Description (AR)')}</label>
-                  <input type="text" value={form.shortDescAr} onChange={(e) => setForm({ ...form, shortDescAr: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none" dir="rtl" />
+                  <RichTextEditor
+                    value={form.shortDescAr}
+                    onChange={(html) => setForm({ ...form, shortDescAr: html })}
+                    placeholder="وصف مختصر (عربي)..."
+                    dir="rtl"
+                  />
                 </div>
               </div>
             </div>
