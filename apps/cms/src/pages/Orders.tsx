@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useTranslation } from '@repo/i18n'
-import { useOrders, useOrder, useUpdateOrderStatus, useDeleteOrder, useBulkDeleteOrders } from '@repo/api-client'
-import { Eye, ChevronDown, Trash2, Loader2 } from 'lucide-react'
+import { useOrders, useOrder, useUpdateOrderStatus, useDeleteOrder, useBulkDeleteOrders, useResendPurchaseEvent } from '@repo/api-client'
+import { Eye, ChevronDown, Trash2, Loader2, Send, CheckCircle, XCircle } from 'lucide-react'
 import type { Order, OrderStatus, PaymentStatus } from '@repo/types'
 
 const statusColors: Record<OrderStatus, string> = {
@@ -45,10 +45,13 @@ export function OrdersPage() {
   const updateStatus = useUpdateOrderStatus()
   const deleteOrder = useDeleteOrder()
   const bulkDeleteOrders = useBulkDeleteOrders()
+  const resendPurchaseEvent = useResendPurchaseEvent()
 
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'single' | 'bulk'; id?: string } | null>(null)
+  const [sentEventIds, setSentEventIds] = useState<Set<string>>(new Set())
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const orders = data?.orders || []
 
@@ -89,6 +92,17 @@ export function OrdersPage() {
     await bulkDeleteOrders.mutateAsync(Array.from(selectedIds))
     setSelectedIds(new Set())
     setConfirmDelete(null)
+  }
+
+  const handleResendPurchaseEvent = async (orderId: string) => {
+    try {
+      await resendPurchaseEvent.mutateAsync(orderId)
+      setSentEventIds((prev) => new Set(prev).add(orderId))
+      setToast({ type: 'success', message: `Purchase event sent for order` })
+    } catch {
+      setToast({ type: 'error', message: `Failed to send purchase event` })
+    }
+    setTimeout(() => setToast(null), 3000)
   }
 
   if (isLoading) {
@@ -216,6 +230,26 @@ export function OrdersPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          onClick={() => handleResendPurchaseEvent(order.id)}
+                          disabled={sentEventIds.has(order.id) || resendPurchaseEvent.isPending}
+                          title={sentEventIds.has(order.id) ? 'Event Sent' : 'Send Purchase Event'}
+                          className={`p-2 rounded-lg transition-colors ${
+                            sentEventIds.has(order.id)
+                              ? 'bg-green-50 cursor-default'
+                              : resendPurchaseEvent.isPending
+                                ? 'bg-slate-100 opacity-50 cursor-wait'
+                                : 'hover:bg-blue-50 cursor-pointer'
+                          }`}
+                        >
+                          {sentEventIds.has(order.id) ? (
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          ) : resendPurchaseEvent.isPending ? (
+                            <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4 text-blue-600" />
+                          )}
+                        </button>
+                        <button
                           onClick={() => setSelectedOrderId(order.id)}
                           className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                         >
@@ -244,6 +278,9 @@ export function OrdersPage() {
           orderId={selectedOrderId}
           onClose={() => setSelectedOrderId(null)}
           onStatusChange={handleStatusChange}
+          onResendPurchaseEvent={handleResendPurchaseEvent}
+          eventSent={sentEventIds.has(selectedOrderId)}
+          sending={resendPurchaseEvent.isPending}
         />
       )}
 
@@ -275,6 +312,21 @@ export function OrdersPage() {
           </div>
         </div>
       )}
+
+      {toast && (
+        <div className={`fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-sm font-medium z-50 ${
+          toast.type === 'success'
+            ? 'bg-green-600 text-white'
+            : 'bg-red-600 text-white'
+        }`}>
+          {toast.type === 'success' ? (
+            <CheckCircle className="w-4 h-4" />
+          ) : (
+            <XCircle className="w-4 h-4" />
+          )}
+          {toast.message}
+        </div>
+      )}
     </div>
   )
 }
@@ -283,10 +335,16 @@ function OrderDetailModal({
   orderId,
   onClose,
   onStatusChange,
+  onResendPurchaseEvent,
+  eventSent,
+  sending,
 }: {
   orderId: string
   onClose: () => void
   onStatusChange: (id: string, data: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => Promise<void>
+  onResendPurchaseEvent: (id: string) => Promise<void>
+  eventSent: boolean
+  sending: boolean
 }) {
   const { t } = useTranslation()
   const { data: order } = useOrder(orderId)
@@ -418,6 +476,37 @@ function OrderDetailModal({
               <p className="text-sm text-slate-900">{order.notesCustomer}</p>
             </div>
           )}
+
+          <div className="border-t border-slate-200 pt-4">
+            <button
+              onClick={() => onResendPurchaseEvent(order.id)}
+              disabled={eventSent || sending}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                eventSent
+                  ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
+                  : sending
+                    ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-wait'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {eventSent ? (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Event Sent
+                </>
+              ) : sending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Send Purchase Event
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         <button

@@ -148,6 +148,14 @@ const adminOrderRoutes = new Elysia({ prefix: "/orders" })
       return { success: true, deleted: body.ids.length };
     },
     { body: BulkDeleteOrdersBody }
+  )
+  .post(
+    "/:id/resend-purchase-event",
+    async ({ params }) => {
+      const result = await OrderService.resendPurchaseEvent(params.id);
+      return { success: true, data: result };
+    },
+    { params: OrderIdParams }
   );
 
 export const orderRoutes = new Elysia()

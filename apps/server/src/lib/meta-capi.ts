@@ -14,6 +14,7 @@ function sha256(value: string): string {
 export interface MetaEventPayload {
   eventName: string;
   eventId?: string;
+  eventTime?: number;
   eventSourceUrl?: string;
   email?: string;
   phone?: string;
@@ -61,7 +62,7 @@ export async function sendMetaEvent(payload: MetaEventPayload): Promise<void> {
     data: [
       {
         event_name: payload.eventName,
-        event_time: Math.floor(Date.now() / 1000),
+        event_time: payload.eventTime ?? Math.floor(Date.now() / 1000),
         event_id: payload.eventId,
         event_source_url: payload.eventSourceUrl,
         action_source: "website",

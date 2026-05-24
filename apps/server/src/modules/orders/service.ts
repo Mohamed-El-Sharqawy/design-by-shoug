@@ -820,4 +820,55 @@ export abstract class OrderService {
       where: { id: { in: ids } },
     });
   }
+
+  static async resendPurchaseEvent(id: string) {
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: { select: { id: true } },
+              },
+            },
+          },
+        },
+        address: true,
+        user: {
+          select: { email: true, phone: true, firstName: true, lastName: true },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundError("Order");
+    }
+
+    const customerEmail = order.user?.email || undefined;
+    const phone = order.address?.phone || undefined;
+    const fullName = order.address?.fullName || "";
+    const firstName = fullName.split(" ")[0] || undefined;
+    const lastName = fullName.split(" ").slice(1).join(" ") || undefined;
+
+    await sendMetaEvent({
+      eventName: "Purchase",
+      eventId: `purchase_${order.id}`,
+      eventTime: Math.floor(order.createdAt.getTime() / 1000),
+      email: customerEmail,
+      phone,
+      firstName,
+      lastName,
+      externalId: order.userId || undefined,
+      fbp: order.fbp || undefined,
+      fbc: order.fbc || undefined,
+      value: Number(order.total),
+      currency: "AED",
+      contentIds: order.items.map((i) => i.variant.product.id),
+      contentType: "product",
+      numItems: order.items.reduce((s, i) => s + i.quantity, 0),
+    });
+
+    return { success: true, orderId: order.id, orderNumber: order.orderNumber };
+  }
 }

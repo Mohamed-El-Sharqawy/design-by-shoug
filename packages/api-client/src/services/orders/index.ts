@@ -91,3 +91,14 @@ export function useBulkDeleteOrders() {
     },
   });
 }
+
+export function useResendPurchaseEvent() {
+  const client = useApiClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      client.post<{ success: boolean; orderId: string; orderNumber: string }>(
+        `/orders/${id}/resend-purchase-event`,
+      ),
+  });
+}
