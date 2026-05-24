@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react'
 import { useTranslation } from '@repo/i18n'
-import { useOrders, useOrder, useUpdateOrderStatus, useDeleteOrder, useBulkDeleteOrders, useResendPurchaseEvent } from '@repo/api-client'
+import { useOrders, useOrder, useUpdateOrderStatus, useDeleteOrder, useBulkDeleteOrders } from '@repo/api-client'
 import { Eye, ChevronDown, Trash2, Loader2, Send, CheckCircle, XCircle } from 'lucide-react'
 import type { Order, OrderStatus, PaymentStatus } from '@repo/types'
+import { fbqTrack } from '@/lib/pixel'
 
 const statusColors: Record<OrderStatus, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700',
@@ -45,12 +46,12 @@ export function OrdersPage() {
   const updateStatus = useUpdateOrderStatus()
   const deleteOrder = useDeleteOrder()
   const bulkDeleteOrders = useBulkDeleteOrders()
-  const resendPurchaseEvent = useResendPurchaseEvent()
 
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'single' | 'bulk'; id?: string } | null>(null)
   const [sentEventIds, setSentEventIds] = useState<Set<string>>(new Set())
+  const [sendingEventId, setSendingEventId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const orders = data?.orders || []
@@ -94,14 +95,28 @@ export function OrdersPage() {
     setConfirmDelete(null)
   }
 
-  const handleResendPurchaseEvent = async (orderId: string) => {
+  const handleResendPurchaseEvent = (order: Order) => {
+    setSendingEventId(order.id)
     try {
-      await resendPurchaseEvent.mutateAsync(orderId)
-      setSentEventIds((prev) => new Set(prev).add(orderId))
-      setToast({ type: 'success', message: `Purchase event sent for order` })
+      fbqTrack(
+        "Purchase",
+        {
+          value: Number(order.total),
+          currency: "AED",
+          content_type: "product",
+          content_ids: order.items?.map((i) => i.variantId) ?? [],
+          content_name: `Order #${order.orderNumber}`,
+          num_items: order.items?.reduce((s, i) => s + i.quantity, 0) ?? 1,
+          order_id: order.orderNumber,
+        },
+        `purchase_${order.id}`,
+      )
+      setSentEventIds((prev) => new Set(prev).add(order.id))
+      setToast({ type: 'success', message: `Purchase event sent for #${order.orderNumber}` })
     } catch {
       setToast({ type: 'error', message: `Failed to send purchase event` })
     }
+    setSendingEventId(null)
     setTimeout(() => setToast(null), 3000)
   }
 
@@ -230,20 +245,20 @@ export function OrdersPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => handleResendPurchaseEvent(order.id)}
-                          disabled={sentEventIds.has(order.id) || resendPurchaseEvent.isPending}
+                          onClick={() => handleResendPurchaseEvent(order)}
+                          disabled={sentEventIds.has(order.id) || sendingEventId === order.id}
                           title={sentEventIds.has(order.id) ? 'Event Sent' : 'Send Purchase Event'}
                           className={`p-2 rounded-lg transition-colors ${
                             sentEventIds.has(order.id)
                               ? 'bg-green-50 cursor-default'
-                              : resendPurchaseEvent.isPending
+                              : sendingEventId === order.id
                                 ? 'bg-slate-100 opacity-50 cursor-wait'
                                 : 'hover:bg-blue-50 cursor-pointer'
                           }`}
                         >
                           {sentEventIds.has(order.id) ? (
                             <CheckCircle className="w-4 h-4 text-green-600" />
-                          ) : resendPurchaseEvent.isPending ? (
+                          ) : sendingEventId === order.id ? (
                             <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
                           ) : (
                             <Send className="w-4 h-4 text-blue-600" />
@@ -280,7 +295,7 @@ export function OrdersPage() {
           onStatusChange={handleStatusChange}
           onResendPurchaseEvent={handleResendPurchaseEvent}
           eventSent={sentEventIds.has(selectedOrderId)}
-          sending={resendPurchaseEvent.isPending}
+          sending={sendingEventId === selectedOrderId}
         />
       )}
 
@@ -342,7 +357,7 @@ function OrderDetailModal({
   orderId: string
   onClose: () => void
   onStatusChange: (id: string, data: { status?: OrderStatus; paymentStatus?: PaymentStatus }) => Promise<void>
-  onResendPurchaseEvent: (id: string) => Promise<void>
+  onResendPurchaseEvent: (order: Order) => void
   eventSent: boolean
   sending: boolean
 }) {
@@ -479,7 +494,7 @@ function OrderDetailModal({
 
           <div className="border-t border-slate-200 pt-4">
             <button
-              onClick={() => onResendPurchaseEvent(order.id)}
+              onClick={() => onResendPurchaseEvent(order)}
               disabled={eventSent || sending}
               className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 eventSent
