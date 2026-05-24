@@ -127,6 +127,7 @@ export function trackPurchase(
     order_id: orderNumber,
   };
   trackEvent("Purchase", params, eventId);
+  trackServerEvent("Purchase", eventId, params);
 }
 
 export function trackSearch(query: string, productIds: string[]) {
