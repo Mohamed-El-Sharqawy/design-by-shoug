@@ -32,7 +32,8 @@ ENV HOSTNAME="0.0.0.0"
 ENV PORT=4001
 
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+    adduser --system --uid 1001 nextjs && \
+    apk add --no-cache curl
 
 COPY --from=builder /app/apps/marketing/public ./apps/marketing/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/marketing/.next/standalone ./
@@ -42,6 +43,6 @@ USER nextjs
 EXPOSE 4001
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:4001/ || exit 1
+    CMD curl -f http://127.0.0.1:4001/ || exit 1
 
 CMD ["node", "apps/marketing/server.js"]
