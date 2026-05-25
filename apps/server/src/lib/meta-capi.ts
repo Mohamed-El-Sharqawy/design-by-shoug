@@ -20,6 +20,9 @@ export interface MetaEventPayload {
   phone?: string;
   firstName?: string;
   lastName?: string;
+  country?: string;
+  city?: string;
+  zip?: string;
   externalId?: string;
   ip?: string;
   userAgent?: string;
@@ -41,15 +44,33 @@ export async function sendMetaEvent(payload: MetaEventPayload): Promise<void> {
   }
 
   const userData: Record<string, string> = {};
+
   if (payload.email) userData.em = sha256(payload.email);
   if (payload.phone) userData.ph = sha256(payload.phone);
   if (payload.firstName) userData.fn = sha256(payload.firstName);
   if (payload.lastName) userData.ln = sha256(payload.lastName);
+  if (payload.country) userData.ct = sha256(payload.country);
+  if (payload.city) userData.st = sha256(payload.city);
+  if (payload.zip) userData.zp = sha256(payload.zip);
+  if (payload.externalId) userData.external_id = sha256(payload.externalId);
   if (payload.ip) userData.client_ip_address = payload.ip;
   if (payload.userAgent) userData.client_user_agent = payload.userAgent;
   if (payload.fbp) userData.fbp = payload.fbp;
   if (payload.fbc) userData.fbc = payload.fbc;
-  if (payload.externalId) userData.external_id = sha256(payload.externalId);
+
+  const hasStrongIdentifier =
+    !!userData.em ||
+    !!userData.ph ||
+    !!userData.external_id ||
+    !!userData.fbp ||
+    !!userData.fbc;
+
+  if (!hasStrongIdentifier) {
+    console.warn(
+      `[Meta CAPI] Skipping ${payload.eventName}: needs at least one of email, phone, external_id, fbp, or fbc — browser pixel will handle attribution`
+    );
+    return;
+  }
 
   const customData: Record<string, unknown> = {};
   if (payload.value !== undefined) customData.value = payload.value;
@@ -70,19 +91,20 @@ export async function sendMetaEvent(payload: MetaEventPayload): Promise<void> {
         custom_data: customData,
       },
     ],
-    access_token: META_ACCESS_TOKEN,
     ...(META_TEST_EVENT_CODE && { test_event_code: META_TEST_EVENT_CODE }),
   };
 
   try {
-    const res = await fetch(
-      `https://graph.facebook.com/v21.0/${META_PIXEL_ID}/events`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }
+    const url = new URL(
+      `https://graph.facebook.com/v21.0/${META_PIXEL_ID}/events`
     );
+    url.searchParams.set("access_token", META_ACCESS_TOKEN!);
+
+    const res = await fetch(url.toString(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
     if (!res.ok) {
       const text = await res.text();
       console.error(`[Meta CAPI] Error ${res.status}: ${text}`);

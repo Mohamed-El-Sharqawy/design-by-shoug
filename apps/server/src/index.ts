@@ -9,7 +9,7 @@ import { adminRoutes } from "@/modules/admin";
 import { productRoutes } from "@/modules/products";
 import { collectionRoutes } from "@/modules/collections";
 import { cartRoutes } from "@/modules/cart";
-import { orderRoutes } from "@/modules/orders";
+import { orderRoutes, webhookRoutes } from "@/modules/orders";
 import { contentRoutes } from "@/modules/content";
 import { couponRoutes } from "@/modules/coupons";
 import { shippingRoutes } from "@/modules/shipping";
@@ -65,6 +65,7 @@ const app = new Elysia()
   .use(collectionRoutes)
   .use(cartRoutes)
   .use(orderRoutes)
+  .use(webhookRoutes)
   .use(contentRoutes)
   .use(couponRoutes)
   .use(shippingRoutes)

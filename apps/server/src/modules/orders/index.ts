@@ -10,6 +10,7 @@ import {
 } from "./model";
 import { authPlugin, requireAuth, requireAdmin, type AuthUser } from "@/modules/auth";
 import { retrievePaymentIntent } from "@/lib/ziina";
+import { webhookRoutes } from "./webhook";
 
 const publicOrderRoutes = new Elysia({ prefix: "/orders" })
   .use(authPlugin)
@@ -162,3 +163,5 @@ export const orderRoutes = new Elysia()
   .use(publicOrderRoutes)
   .use(userOrderRoutes)
   .use(adminOrderRoutes);
+
+export { webhookRoutes };

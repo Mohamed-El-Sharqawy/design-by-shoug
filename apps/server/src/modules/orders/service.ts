@@ -312,35 +312,8 @@ export abstract class OrderService {
       couponCode: order.couponCode || null,
     };
 
-    try {
-      if (customerEmail) {
-        await sendOrderConfirmationEmail(customerEmail, order.orderNumber, emailDetails);
-      }
-      await sendOwnerOrderNotification(order.orderNumber, emailDetails);
-    } catch (err) {
-      console.error("Failed to send order emails:", err);
-    }
-
-    try {
-      await sendMetaEvent({
-        eventName: "Purchase",
-        eventId: `order_${order.id}`,
-        email: customerEmail || undefined,
-        phone: order.address?.phone || undefined,
-        firstName: order.address?.fullName?.split(" ")[0] || undefined,
-        lastName: order.address?.fullName?.split(" ").slice(1).join(" ") || undefined,
-        ip: requestMeta?.ip,
-        userAgent: requestMeta?.userAgent,
-        fbp: input.fbp || undefined,
-        fbc: input.fbc || undefined,
-        value: Number(order.total),
-        currency: "AED",
-        contentIds: orderItemsData.map((i) => i.productId),
-        contentType: "product",
-        numItems: orderItemsData.reduce((s, i) => s + i.quantity, 0),
-      });
-    } catch (err) {
-      console.error("Failed to send Meta CAPI event:", err);
+    if (input.paymentMethod === "CASH_ON_DELIVERY") {
+      await this.sendOrderFulfillmentSideEffects(order, customerEmail, emailDetails, orderItemsData, requestMeta, input.fbp, input.fbc);
     }
 
     return {
@@ -541,35 +514,16 @@ export abstract class OrderService {
       couponCode: order.couponCode || null,
     };
 
-    try {
-      if (customerEmail) {
-        await sendOrderConfirmationEmail(customerEmail, order.orderNumber, emailDetails);
-      }
-      await sendOwnerOrderNotification(order.orderNumber, emailDetails);
-    } catch (err) {
-      console.error("Failed to send order emails:", err);
-    }
-
-    try {
-      await sendMetaEvent({
-        eventName: "Purchase",
-        eventId: `order_${order.id}`,
-        email: customerEmail || undefined,
-        phone: order.address?.phone || undefined,
-        firstName: order.address?.fullName?.split(" ")[0] || undefined,
-        lastName: order.address?.fullName?.split(" ").slice(1).join(" ") || undefined,
-        ip: requestMeta?.ip,
-        userAgent: requestMeta?.userAgent,
-        fbp: input.fbp || undefined,
-        fbc: input.fbc || undefined,
-        value: Number(order.total),
-        currency: "AED",
-        contentIds: [variant.product.id],
-        contentType: "product",
-        numItems: input.quantity,
-      });
-    } catch (err) {
-      console.error("Failed to send Meta CAPI event:", err);
+    if (input.paymentMethod === "CASH_ON_DELIVERY") {
+      await this.sendOrderFulfillmentSideEffects(
+        order,
+        customerEmail,
+        emailDetails,
+        [{ productId: variant.product.id, quantity: input.quantity }],
+        requestMeta,
+        input.fbp,
+        input.fbc,
+      );
     }
 
     return {
@@ -794,7 +748,14 @@ export abstract class OrderService {
   }
 
   static async updatePaymentToPaid(orderId: string) {
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: { include: { variant: { select: { productId: true } } } },
+        address: true,
+        user: { select: { email: true } },
+      },
+    });
     if (!order || order.paymentStatus === "PAID") return;
 
     await prisma.order.update({
@@ -804,6 +765,93 @@ export abstract class OrderService {
         status: "CONFIRMED",
       },
     });
+
+    const customerEmail =
+      (order as any).user?.email ||
+      (order.userId
+        ? (await prisma.user.findUnique({ where: { id: order.userId } }))?.email
+        : null);
+
+    const emailDetails = {
+      items: order.items.map((item) => ({
+        name: item.productNameEn,
+        size: item.variantDetails,
+        quantity: item.quantity,
+        unitPrice: `AED ${Number(item.unitPrice).toFixed(2)}`,
+        totalPrice: `AED ${Number(item.totalPrice).toFixed(2)}`,
+        image: null as string | null,
+      })),
+      subtotal: `AED ${Number(order.subtotal).toFixed(2)}`,
+      shipping: `AED ${Number(order.shippingCost).toFixed(2)}`,
+      discount: `AED ${Number(order.discount).toFixed(2)}`,
+      total: `AED ${Number(order.total).toFixed(2)}`,
+      paymentMethod: order.paymentMethod === "CASH_ON_DELIVERY" ? "Cash on Delivery" : "Credit Card (Ziina)",
+      address: order.address
+        ? {
+            fullName: order.address.fullName,
+            phone: order.address.phone,
+            street: order.address.street,
+            building: order.address.building,
+            apartment: order.address.apartment,
+            district: order.address.district,
+            city: order.address.city,
+            country: order.address.country,
+          }
+        : undefined,
+      customerNotes: order.notesCustomer || null,
+      couponCode: order.couponCode || null,
+    };
+
+    await this.sendOrderFulfillmentSideEffects(
+      order,
+      customerEmail,
+      emailDetails,
+      order.items.map((i) => ({ productId: (i as any).variant.productId, quantity: i.quantity })),
+      undefined,
+      order.fbp,
+      order.fbc,
+    );
+  }
+
+  private static async sendOrderFulfillmentSideEffects(
+    order: { id: string; orderNumber: string; total: any; address?: any; fbp?: string | null; fbc?: string | null },
+    customerEmail: string | null | undefined,
+    emailDetails: any,
+    itemsData: { productId: string; quantity: number }[],
+    requestMeta?: { ip?: string; userAgent?: string },
+    fbp?: string | null,
+    fbc?: string | null,
+  ) {
+    try {
+      if (customerEmail) {
+        await sendOrderConfirmationEmail(customerEmail, order.orderNumber, emailDetails);
+      }
+      await sendOwnerOrderNotification(order.orderNumber, emailDetails);
+    } catch (err) {
+      console.error("Failed to send order emails:", err);
+    }
+
+    try {
+      await sendMetaEvent({
+        eventName: "Purchase",
+        eventId: `order_${order.id}`,
+        email: customerEmail || undefined,
+        phone: order.address?.phone || undefined,
+        firstName: order.address?.fullName?.split(" ")[0] || undefined,
+        lastName: order.address?.fullName?.split(" ").slice(1).join(" ") || undefined,
+        ip: requestMeta?.ip,
+        userAgent: requestMeta?.userAgent,
+        fbp: fbp || undefined,
+        fbc: fbc || undefined,
+        value: Number(order.total),
+        currency: "AED",
+        contentIds: itemsData.map((i) => i.productId),
+        contentType: "product",
+        numItems: itemsData.reduce((s, i) => s + i.quantity, 0),
+      });
+    } catch (err) {
+      console.error("Failed to send Meta CAPI event:", err);
+    }
   }
 
   static async deleteOrder(id: string) {

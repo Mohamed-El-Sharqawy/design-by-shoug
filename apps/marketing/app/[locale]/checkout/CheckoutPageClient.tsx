@@ -344,6 +344,10 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
         });
         const json = await res.json();
         if (json.success && json.data?.order) {
+          if (json.data.checkoutUrl) {
+            window.location.href = json.data.checkoutUrl;
+            return;
+          }
           const eventId = `order_${json.data.order.id}`;
           trackPurchase(
             json.data.order.orderNumber,
@@ -352,10 +356,6 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             directItem.quantity,
             eventId,
           );
-          if (json.data.checkoutUrl) {
-            window.location.href = json.data.checkoutUrl;
-            return;
-          }
           clearCheckoutState();
           const result = {
             orderNumber: json.data.order.orderNumber,
@@ -387,6 +387,11 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
         });
         const json = await res.json();
         if (json.success && json.data?.order) {
+          if (json.data.checkoutUrl) {
+            clearCart.mutate();
+            window.location.href = json.data.checkoutUrl;
+            return;
+          }
           const eventId = `order_${json.data.order.id}`;
           trackPurchase(
             json.data.order.orderNumber,
@@ -395,11 +400,6 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
             items.reduce((s, i) => s + i.quantity, 0),
             eventId,
           );
-          if (json.data.checkoutUrl) {
-            clearCart.mutate();
-            window.location.href = json.data.checkoutUrl;
-            return;
-          }
           clearCart.mutate();
           clearCheckoutState();
           const result = {
