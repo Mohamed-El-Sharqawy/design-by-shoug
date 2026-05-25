@@ -13,6 +13,8 @@ import type {
 } from "./model";
 import type { Prisma } from "@generated/prisma/client";
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://designbyshoug.com";
+
 function generateOrderNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -313,7 +315,8 @@ export abstract class OrderService {
     };
 
     if (input.paymentMethod === "CASH_ON_DELIVERY") {
-      await this.sendOrderFulfillmentSideEffects(order, customerEmail, emailDetails, orderItemsData, requestMeta, input.fbp, input.fbc);
+      const eventSourceUrl = `${FRONTEND_URL}/${input.locale || "en"}/checkout`;
+      await this.sendOrderFulfillmentSideEffects(order, customerEmail, emailDetails, orderItemsData, requestMeta, input.fbp, input.fbc, eventSourceUrl);
     }
 
     return {
@@ -515,6 +518,7 @@ export abstract class OrderService {
     };
 
     if (input.paymentMethod === "CASH_ON_DELIVERY") {
+      const eventSourceUrl = `${FRONTEND_URL}/${input.locale || "en"}/checkout`;
       await this.sendOrderFulfillmentSideEffects(
         order,
         customerEmail,
@@ -523,6 +527,7 @@ export abstract class OrderService {
         requestMeta,
         input.fbp,
         input.fbc,
+        eventSourceUrl,
       );
     }
 
@@ -810,6 +815,7 @@ export abstract class OrderService {
       undefined,
       order.fbp,
       order.fbc,
+      `${FRONTEND_URL}/order/confirmation`,
     );
   }
 
@@ -821,6 +827,7 @@ export abstract class OrderService {
     requestMeta?: { ip?: string; userAgent?: string },
     fbp?: string | null,
     fbc?: string | null,
+    eventSourceUrl?: string,
   ) {
     try {
       if (customerEmail) {
@@ -835,6 +842,7 @@ export abstract class OrderService {
       await sendMetaEvent({
         eventName: "Purchase",
         eventId: `order_${order.id}`,
+        eventSourceUrl,
         email: customerEmail || undefined,
         phone: order.address?.phone || undefined,
         firstName: order.address?.fullName?.split(" ")[0] || undefined,
@@ -899,10 +907,16 @@ export abstract class OrderService {
     const firstName = fullName.split(" ")[0] || undefined;
     const lastName = fullName.split(" ").slice(1).join(" ") || undefined;
 
+    const eventSourceUrl =
+      order.paymentMethod === "CASH_ON_DELIVERY"
+        ? `${FRONTEND_URL}/checkout`
+        : `${FRONTEND_URL}/order/confirmation`;
+
     await sendMetaEvent({
       eventName: "Purchase",
       eventId: `purchase_${order.id}`,
       eventTime: Math.floor(order.createdAt.getTime() / 1000),
+      eventSourceUrl,
       email: customerEmail,
       phone,
       firstName,
