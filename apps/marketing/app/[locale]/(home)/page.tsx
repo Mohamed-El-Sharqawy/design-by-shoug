@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Banners } from "./components/Banners";
 import { Collections } from "./components/Collections";
 import { NewArrivals } from "./components/NewArrivals";
@@ -22,23 +23,13 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const isAr = locale === "ar";
+  const t = await getTranslations("SEO");
   const canonical = `${SITE_URL}/${locale}`;
 
-  const title = isAr
-    ? "ديزاين باي شوق | أزياء فاخرة وعبايات أنيقة في الإمارات"
-    : "Design By Shoug | Luxury Fashion & Elegant Abayas in UAE";
-  const description = isAr
-    ? "تسوقي أحدث تشكيلات العبايات والأزياء الفاخرة من ديزاين باي شوق. تصاميم أنيقة، خامات عالية الجودة، وتوصيل في الإمارات."
-    : "Shop the latest luxury abayas and elegant fashion from Design By Shoug. Timeless designs, premium quality, and delivery across the UAE.";
-  const keywords = isAr
-    ? "عبايات, أزياء فاخرة, تسوق أونلاين, الإمارات, دبي, ديزاين باي شوق, عبايات أنيقة"
-    : "abayas, luxury fashion, online shopping, UAE, Dubai, Design By Shoug, elegant abayas";
-
   return {
-    title,
-    description,
-    keywords,
+    title: t("homeTitle"),
+    description: t("homeDescription"),
+    keywords: t("homeKeywords"),
     alternates: {
       canonical,
       languages: {
@@ -51,8 +42,11 @@ export async function generateMetadata({
 }
 
 export default async function HomePage() {
+  const t = await getTranslations("SEO");
+
   return (
     <>
+      <h1 className="sr-only">{t("h1")}</h1>
       <Suspense fallback={<BannerSkeleton />}>
         <Banners />
       </Suspense>

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Header } from "@/components/Header";
@@ -30,16 +31,13 @@ const geistMono = localFont({
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslations("SEO");
   const baseUrl = SITE_URL;
   const canonicalUrl = `${baseUrl}/${locale}`;
+  const title = t("title");
+  const description = t("description");
+  const keywords = t("keywords");
   const isAr = locale === "ar";
-  const title = isAr ? "ديزاين باي شوق | أزياء فاخرة وأناقة عصرية" : "Design By Shoug | Luxury Fashion & Elegant Modern Style";
-  const description = isAr
-    ? "اكتشف ديزاين باي شوق — علامة أزياء عصرية تقدم تصاميم أنيقة وفاخرة تجمع بين الجمال، البساطة، والأناقة اليومية."
-    : "Discover Design By Shoug — a modern fashion brand offering elegant, timeless, and stylish pieces crafted for confidence and everyday luxury.";
-  const keywords = isAr
-    ? "أزياء, عبايات, فاخرة, أنيقة, الإمارات, دبي, ديزاين باي شوق, تصميم, أناقة, موضة"
-    : "fashion, abayas, luxury, elegant, UAE, Dubai, Design By Shoug, modern, style, modest fashion";
 
   return {
     metadataBase: new URL(baseUrl),
@@ -109,6 +107,7 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   const dir = locale === "ar" ? "rtl" : "ltr";
+  const t = await getTranslations("SEO");
   const isAr = locale === "ar";
 
   const organizationJsonLd = {
@@ -117,9 +116,7 @@ export default async function LocaleLayout({
     name: "Design By Shoug",
     url: SITE_URL,
     logo: `${SITE_URL}/logo.png`,
-    description: isAr
-      ? "ديزاين باي شوق — علامة أزياء عصرية تقدم تصاميم أنيقة وفاخرة"
-      : "Design By Shoug — a modern fashion brand offering elegant and timeless pieces",
+    description: t("organizationDescription"),
     contactPoint: {
       "@type": "ContactPoint",
       email: "hello@designbyshoug.com",
