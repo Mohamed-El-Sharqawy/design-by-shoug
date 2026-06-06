@@ -103,7 +103,7 @@ export async function createCheckoutSession(
       success_url: successUrl,
       cancel_url: cancelUrl,
       message: `Order ${orderNumber}`,
-      test: true,
+      test: process.env.NODE_ENV !== "production",
     }),
   });
 }

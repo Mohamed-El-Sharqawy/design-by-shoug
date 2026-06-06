@@ -169,7 +169,9 @@ export default async function LocaleLayout({
           timeZone="Asia/Dubai"
         >
           <Providers>
-            <ScrollToTop />
+            <Suspense>
+              <ScrollToTop />
+            </Suspense>
             <AuthHydrator />
             <EmailVerificationBanner locale={locale} />
             <Header />
