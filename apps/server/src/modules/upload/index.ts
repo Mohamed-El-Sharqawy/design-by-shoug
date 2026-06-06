@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { requireAdmin } from "@/modules/auth";
-import { uploadImage, uploadVideo, type UploadFolder } from "@/lib/cloudinary";
+import { uploadImage, uploadVideo, type UploadFolder } from "@/lib/storage";
 
 const uploadRoutes = new Elysia({ prefix: "/upload" })
   .use(requireAdmin)
@@ -10,13 +10,15 @@ const uploadRoutes = new Elysia({ prefix: "/upload" })
       const { file, folder } = body;
 
       const buffer = Buffer.from(await file.arrayBuffer());
-      const result = await uploadImage(buffer, folder as UploadFolder);
+      const result = await uploadImage(buffer, folder as UploadFolder, {
+        filename: file.name,
+      });
 
       return {
         success: true,
         data: {
-          url: result.secureUrl,
-          publicId: result.publicId,
+          url: result.url,
+          publicId: result.key,
           width: result.width,
           height: result.height,
         },
@@ -42,13 +44,15 @@ const uploadRoutes = new Elysia({ prefix: "/upload" })
       const { file, folder } = body;
 
       const buffer = Buffer.from(await file.arrayBuffer());
-      const result = await uploadVideo(buffer, folder as UploadFolder);
+      const result = await uploadVideo(buffer, folder as "videos" | "reviews", {
+        filename: file.name,
+      });
 
       return {
         success: true,
         data: {
-          url: result.secureUrl,
-          publicId: result.publicId,
+          url: result.url,
+          publicId: result.key,
           width: result.width,
           height: result.height,
         },
