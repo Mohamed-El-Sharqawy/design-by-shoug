@@ -105,7 +105,7 @@ export function OrderConfirmationClient() {
   }
 
   return (
-    <section className="py-16 sm:py-24 bg-white min-h-screen">
+    <section className="py-24 sm:py-32 bg-white">
       <div className="max-w-lg mx-auto px-4 sm:px-6 text-center">
         <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-green-50 flex items-center justify-center">
           <svg

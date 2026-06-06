@@ -33,12 +33,12 @@ export interface ZiinaPaymentIntent {
   currency_code: string;
   created_at: string;
   status:
-    | "requires_payment_instrument"
-    | "requires_user_action"
-    | "pending"
-    | "completed"
-    | "failed"
-    | "canceled";
+  | "requires_payment_instrument"
+  | "requires_user_action"
+  | "pending"
+  | "completed"
+  | "failed"
+  | "canceled";
   operation_id: string;
   redirect_url: string;
   embedded_url: string;
@@ -103,6 +103,7 @@ export async function createCheckoutSession(
       success_url: successUrl,
       cancel_url: cancelUrl,
       message: `Order ${orderNumber}`,
+      test: true,
     }),
   });
 }

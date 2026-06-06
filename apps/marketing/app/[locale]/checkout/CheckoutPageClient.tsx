@@ -106,7 +106,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
 
   const isGuest = !token;
   const saved = loadCheckoutState();
-  const [step, setStep] = useState<Step>((saved?.step as Step) || "address");
+  const [step, setStep] = useState<Step>("address");
   const { data: addresses = [] } = useAddresses({ enabled: !!token });
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(saved?.selectedAddressId || null);
   const [showNewAddress, setShowNewAddress] = useState(isGuest);
@@ -167,37 +167,10 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   }, [step, newAddress, paymentMethod, guestEmail, couponCode, discount, selectedAddressId, notes]);
 
   useEffect(() => {
-    const contentKey = isBuyNow
-      ? `direct_${buyNowVariantId}_${buyNowQty}`
-      : `cart_${items.map((i) => `${i.variantId}_${i.quantity}`).join("|")}`;
-
-    try {
-      const stored = sessionStorage.getItem(INIT_CHECKOUT_KEY);
-      if (stored === contentKey) return;
-    } catch {
-      /* ignore */
-    }
-
-    if (isBuyNow && directItem) {
-      trackInitiateCheckoutDirect(directItem.productId, directItem.unitPrice, directItem.quantity);
-    } else if (!isBuyNow && items.length > 0) {
-      trackInitiateCheckout(items, cartSubtotal);
-    }
-
-    try {
-      sessionStorage.setItem(INIT_CHECKOUT_KEY, contentKey);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
     fetchShippingCities().then(setShippingCities);
   }, []);
 
-  const guestAddressReady = isGuest
-    ? !!(newAddress.fullName && newAddress.phone && newAddress.country && newAddress.city && newAddress.street)
-    : false;
+  const newAddressReady = !!(newAddress.fullName && newAddress.phone && newAddress.country && newAddress.city && newAddress.street);
 
   // Map variant query data to DirectItem
   const directItem: DirectItem | null = (() => {
@@ -231,6 +204,38 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   const subtotal = isBuyNow
     ? (directItem ? directItem.unitPrice * directItem.quantity : 0)
     : cartSubtotal;
+
+  useEffect(() => {
+    if (orderResult) return;
+
+    const contentKey = isBuyNow
+      ? `direct_${buyNowVariantId}_${buyNowQty}`
+      : `cart_${items.map((i) => `${i.variantId}_${i.quantity}`).join("|")}`;
+
+    try {
+      const stored = sessionStorage.getItem(INIT_CHECKOUT_KEY);
+      if (stored === contentKey) return;
+    } catch {
+      /* ignore */
+    }
+
+    let tracked = false;
+    if (isBuyNow && directItem) {
+      trackInitiateCheckoutDirect(directItem.productId, directItem.unitPrice, directItem.quantity);
+      tracked = true;
+    } else if (!isBuyNow && items.length > 0) {
+      trackInitiateCheckout(items, cartSubtotal);
+      tracked = true;
+    }
+
+    if (tracked) {
+      try {
+        sessionStorage.setItem(INIT_CHECKOUT_KEY, contentKey);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [isBuyNow, directItem, items, cartSubtotal, buyNowVariantId, buyNowQty, orderResult]);
 
   const validateCoupon = useValidateCoupon();
   const calculateShipping = useCalculateShipping();
@@ -296,7 +301,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
   };
 
   const handlePlaceOrder = async () => {
-    if (!selectedAddress && !guestAddressReady) return;
+    if (!selectedAddress && !newAddressReady) return;
 
     if (user && !user.emailVerified) {
       setShowVerifyModal(true);
@@ -713,7 +718,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      disabled={!selectedAddressId && !guestAddressReady}
+                      disabled={!selectedAddressId && !(showNewAddress && newAddressReady)}
                       onClick={() => {
                         if (isGuest && showNewAddress && addressFormRef.current) {
                           addressFormRef.current.requestSubmit();
@@ -735,7 +740,7 @@ export function CheckoutPageClient({ locale }: { locale: string }) {
                 <div>
                   <h2 className="font-serif text-2xl text-[#1A1A1A] tracking-wide mb-6">{t("orderSummary")}</h2>
 
-                  {(selectedAddress || guestAddressReady) && (
+                  {(selectedAddress || (isGuest && newAddressReady)) && (
                     <div className="p-4 border border-[#E8E4DF] mb-6">
                       <p className="text-xs tracking-widest uppercase text-[#8B7355] mb-2">{t("shippingAddress")}</p>
                       <p className="text-sm text-[#1A1A1A] font-light">{selectedAddress?.fullName || newAddress.fullName}</p>

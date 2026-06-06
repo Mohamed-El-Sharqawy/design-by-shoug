@@ -15,11 +15,20 @@ function getAuthToken(): string | null {
   }
 }
 
+const dedupCache = new Map<string, number>();
+const DEDUP_WINDOW_MS = 1000;
+
 export async function trackServerEvent(
   eventName: string,
   eventId: string,
   customData?: Record<string, unknown>,
 ): Promise<void> {
+  const dedupKey = `${eventName}:${eventId}`;
+  const now = Date.now();
+  const last = dedupCache.get(dedupKey);
+  if (last && now - last < DEDUP_WINDOW_MS) return;
+  dedupCache.set(dedupKey, now);
+
   const fbp = getFbp();
   const fbc = getFbc();
   const token = getAuthToken();

@@ -15,6 +15,7 @@ import { WhatsAppFAB } from "@/components/WhatsAppFAB";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { Providers } from "@/components/Providers";
 import { FacebookPixel } from "@/components/FacebookPixel";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import "../globals.css";
 import { setRequestLocale } from "next-intl/server";
 
@@ -168,6 +169,7 @@ export default async function LocaleLayout({
           timeZone="Asia/Dubai"
         >
           <Providers>
+            <ScrollToTop />
             <AuthHydrator />
             <EmailVerificationBanner locale={locale} />
             <Header />
