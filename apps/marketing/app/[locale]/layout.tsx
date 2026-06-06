@@ -13,6 +13,7 @@ import { AuthHydrator } from "@/components/AuthHydrator";
 import { CartBottomBar } from "@/components/CartBottomBar";
 import { WhatsAppFAB } from "@/components/WhatsAppFAB";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import { MaintenanceModal } from "@/components/MaintenanceModal";
 import { Providers } from "@/components/Providers";
 import { FacebookPixel } from "@/components/FacebookPixel";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -169,6 +170,9 @@ export default async function LocaleLayout({
           timeZone="Asia/Dubai"
         >
           <Providers>
+            <Suspense>
+              <MaintenanceModal />
+            </Suspense>
             <Suspense>
               <ScrollToTop />
             </Suspense>

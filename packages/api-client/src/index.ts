@@ -17,3 +17,4 @@ export * from "./services/upload";
 export * from "./services/cart";
 export * from "./services/addresses";
 export * from "./services/search";
+export * from "./services/settings";

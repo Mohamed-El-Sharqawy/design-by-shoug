@@ -885,5 +885,10 @@
     "homeKeywords": "abayas, luxury fashion, online shopping, UAE, Dubai, Design By Shoug, elegant abayas",
     "h1": "Design By Shoug — Luxury Fashion & Elegant Abayas",
     "organizationDescription": "Design By Shoug — a modern fashion brand offering elegant and timeless pieces"
+  },
+  "Maintenance": {
+    "title": "Under Maintenance",
+    "message": "We're currently performing scheduled maintenance to improve your experience. We'll be back shortly.",
+    "customMessage": "customMessage"
   }
 }

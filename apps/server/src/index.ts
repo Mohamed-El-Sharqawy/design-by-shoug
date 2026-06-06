@@ -21,6 +21,7 @@ import { searchRoutes } from "@/modules/search";
 import { contactRoutes } from "@/modules/contact";
 import { addressRoutes } from "@/modules/addresses";
 import { metaRoutes } from "@/modules/meta";
+import { settingsRoutes } from "@/modules/settings";
 
 const app = new Elysia()
   .use(errorHandler)
@@ -54,6 +55,7 @@ const app = new Elysia()
           { name: "CustomerReviews", description: "Customer video reviews" },
           { name: "Search", description: "Search products and collections" },
           { name: "Contact", description: "Contact form" },
+          { name: "Settings", description: "Site settings" },
         ],
       },
     })
@@ -77,6 +79,7 @@ const app = new Elysia()
   .use(contactRoutes)
   .use(addressRoutes)
   .use(metaRoutes)
+  .use(settingsRoutes)
   .listen(process.env.PORT || 3001);
 
 console.log(
