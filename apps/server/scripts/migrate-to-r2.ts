@@ -1,15 +1,32 @@
-/**
- * Utility: Replaces remaining res.cloudinary.com URLs in the database
- * with cdn.designbyshoug.com URLs.
- *
- * Run: bun run scripts/migrate-to-r2.ts
- */
-
+import {
+  S3Client,
+  PutObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} from "@aws-sdk/client-s3";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
+import { v2 as cloudinary } from "cloudinary";
 import "dotenv/config";
 
-const PUBLIC_URL = process.env.R2_PUBLIC_URL || "https://cdn.designbyshoug.com";
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const r2 = new S3Client({
+  region: "auto",
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+});
+
+const BUCKET = process.env.R2_BUCKET!;
+const PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
 function cloudinaryUrlToKey(url: string): string {
   const match = url.match(/\/(?:image|video)\/upload\/(?:v\d+\/)?(.+)$/);
@@ -27,11 +44,120 @@ function replaceCloudinaryUrl(url: string): string {
   return `${PUBLIC_URL}/${cloudinaryUrlToKey(url)}`;
 }
 
-async function main() {
-  console.log("=".repeat(60));
-  console.log("  Cloudinary → R2: Updating database URLs");
-  console.log("=".repeat(60), "\n");
+async function keyExistsInR2(key: string): Promise<boolean> {
+  try {
+    await r2.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
+async function downloadAndUploadToR2(url: string, key: string): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to download ${url}: ${response.status}`);
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const contentType = response.headers.get("content-type") || "application/octet-stream";
+
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+    })
+  );
+}
+
+async function cleanupOrphanedR2Files(cloudinaryKeys: Set<string>) {
+  console.log("\n🧹 Step 2: Cleaning orphaned files in R2...\n");
+
+  let orphaned: string[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const result = await r2.send(
+      new ListObjectsV2Command({
+        Bucket: BUCKET,
+        Prefix: "designbyshoug/",
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    for (const obj of result.Contents ?? []) {
+      if (obj.Key && !cloudinaryKeys.has(obj.Key)) {
+        orphaned.push(obj.Key);
+      }
+    }
+
+    continuationToken = result.NextContinuationToken;
+  } while (continuationToken);
+
+  if (orphaned.length === 0) {
+    console.log("  ✅ No orphaned files found\n");
+    return;
+  }
+
+  for (let i = 0; i < orphaned.length; i += 1000) {
+    const batch = orphaned.slice(i, i + 1000);
+    await r2.send(
+      new DeleteObjectsCommand({
+        Bucket: BUCKET,
+        Delete: { Objects: batch.map((k) => ({ Key: k })) },
+      })
+    );
+  }
+
+  console.log(`  🗑️  Deleted ${orphaned.length} orphaned files from R2\n`);
+}
+
+async function migrateFilesFromCloudinary() {
+  console.log("\n📁 Step 1: Downloading files from Cloudinary → Uploading to R2...\n");
+
+  const cloudinaryKeys = new Set<string>();
+  let nextCursor: string | undefined;
+  let uploaded = 0;
+  let skipped = 0;
+
+  do {
+    const result = await cloudinary.api.resources({
+      type: "upload",
+      prefix: "designbyshoug/",
+      max_results: 100,
+      next_cursor: nextCursor,
+    });
+
+    for (const resource of result.resources) {
+      const key = cloudinaryUrlToKey(resource.secure_url);
+      cloudinaryKeys.add(key);
+
+      const exists = await keyExistsInR2(key);
+      if (exists) {
+        skipped++;
+        continue;
+      }
+
+      try {
+        console.log(`  ⬇ ${key}`);
+        await downloadAndUploadToR2(resource.secure_url, key);
+        console.log(`  ⬆ ✓`);
+        uploaded++;
+      } catch (err) {
+        console.error(`  ✗ Failed: ${key}`, err);
+      }
+    }
+
+    nextCursor = result.next_cursor;
+  } while (nextCursor);
+
+  console.log(`\n  📊 Uploaded: ${uploaded} | Skipped (already in R2): ${skipped}\n`);
+
+  await cleanupOrphanedR2Files(cloudinaryKeys);
+}
+
+async function updateDatabaseUrls() {
+  console.log("🗄️  Step 3: Updating database URLs...\n");
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
   const prisma = new PrismaClient({ adapter });
 
@@ -102,11 +228,20 @@ async function main() {
     }
   }
 
-  console.log(`  ✅ Updated ${updated} URL fields\n`);
+  console.log(`  ✅ Updated ${updated} URL fields in database\n`);
   await prisma.$disconnect();
+}
+
+async function main() {
+  console.log("=".repeat(60));
+  console.log("  Cloudinary → Cloudflare R2 Migration");
+  console.log("=".repeat(60));
+
+  await migrateFilesFromCloudinary();
+  await updateDatabaseUrls();
 
   console.log("=".repeat(60));
-  console.log("  Done!");
+  console.log("  Migration complete!");
   console.log("=".repeat(60));
 }
 
