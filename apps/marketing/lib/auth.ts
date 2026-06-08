@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { mergeLocalCartToServer } from "./cart-hooks";
 import { setAuthCookie, removeAuthCookie } from "./cookie-auth";
+import { clarityIdentify } from "./clarity-helpers";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:3001";
@@ -58,6 +59,7 @@ export const useAuth = create<AuthStore>()(
             if (json.success && json.data) {
               set({ user: json.data, hydrated: true });
               setAuthCookie(token);
+              clarityIdentify(json.data.id, `${json.data.firstName || ""} ${json.data.lastName || ""}`.trim());
               return;
             }
           } catch {
@@ -86,6 +88,7 @@ export const useAuth = create<AuthStore>()(
           const { token, user } = json.data;
           set({ token, user: { ...user, emailVerified: user.emailVerified ?? false }, loading: false });
           setAuthCookie(token);
+          clarityIdentify(user.id, `${user.firstName || ""} ${user.lastName || ""}`.trim());
           await mergeLocalCartToServer(token);
         } catch (err) {
           set({ loading: false });
@@ -118,6 +121,7 @@ export const useAuth = create<AuthStore>()(
           const { token, user } = json.data;
           set({ token, user: { ...user, emailVerified: false }, loading: false });
           setAuthCookie(token);
+          clarityIdentify(user.id, `${user.firstName || ""} ${user.lastName || ""}`.trim());
           await mergeLocalCartToServer(token);
           return eventId;
         } catch (err) {

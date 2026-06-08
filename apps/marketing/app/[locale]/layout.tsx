@@ -16,6 +16,7 @@ import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { MaintenanceModal } from "@/components/MaintenanceModal";
 import { Providers } from "@/components/Providers";
 import { FacebookPixel } from "@/components/FacebookPixel";
+import { MicrosoftClarity } from "@/components/MicrosoftClarity";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import "../globals.css";
 import { setRequestLocale } from "next-intl/server";
@@ -162,6 +163,9 @@ export default async function LocaleLayout({
         />
         <Suspense>
           <FacebookPixel />
+        </Suspense>
+        <Suspense>
+          <MicrosoftClarity />
         </Suspense>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>

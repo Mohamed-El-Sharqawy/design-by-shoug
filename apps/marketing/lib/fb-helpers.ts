@@ -2,6 +2,7 @@ import type { Product } from "@repo/types";
 import type { CartItemLocal } from "./cart-hooks";
 import { trackEvent, trackCustomEvent } from "@/components/FacebookPixel";
 import { trackServerEvent } from "./meta-capi-client";
+import { clarityEvent, clarityUpgrade } from "./clarity-helpers";
 
 function uid(): string {
   return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
@@ -59,6 +60,7 @@ export function trackAddToCart(
   };
   trackEvent("AddToCart", params, eventId);
   trackServerEvent("AddToCart", eventId, params);
+  clarityEvent("AddToCart");
 }
 
 export function trackAddToCartFromItem(item: CartItemLocal) {
@@ -74,6 +76,7 @@ export function trackAddToCartFromItem(item: CartItemLocal) {
   };
   trackEvent("AddToCart", params, eventId);
   trackServerEvent("AddToCart", eventId, params);
+  clarityEvent("AddToCart");
 }
 
 export function trackInitiateCheckout(
@@ -90,6 +93,8 @@ export function trackInitiateCheckout(
   };
   trackEvent("InitiateCheckout", params, eventId);
   trackServerEvent("InitiateCheckout", eventId, params);
+  clarityEvent("InitiateCheckout");
+  clarityUpgrade("checkout_started");
 }
 
 export function trackInitiateCheckoutDirect(
@@ -107,6 +112,8 @@ export function trackInitiateCheckoutDirect(
   };
   trackEvent("InitiateCheckout", params, eventId);
   trackServerEvent("InitiateCheckout", eventId, params);
+  clarityEvent("InitiateCheckout");
+  clarityUpgrade("checkout_started");
 }
 
 export function trackPurchase(
@@ -127,6 +134,8 @@ export function trackPurchase(
     order_id: orderNumber,
   };
   trackEvent("Purchase", params, eventId);
+  clarityEvent("Purchase");
+  clarityUpgrade("purchase_completed");
 }
 
 export function trackSearch(query: string, productIds: string[]) {
@@ -147,6 +156,7 @@ export function trackCompleteRegistration(name: string, eventID?: string) {
     content_name: name,
   };
   trackEvent("CompleteRegistration", params, eventId);
+  clarityEvent("CompleteRegistration");
 }
 
 export function trackLogin() {

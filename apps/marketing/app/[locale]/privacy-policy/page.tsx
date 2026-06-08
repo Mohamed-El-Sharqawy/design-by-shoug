@@ -39,6 +39,8 @@ export default async function PrivacyPolicyPage() {
           <Section title={t("s4Title")} body={t("s4Body")} />
           <Section title={t("s5Title")} body={t("s5Body")} />
           <Section title={t("s6Title")} body={t("s6Body")} />
+          <Section title={t("s7Title")} body={t("s7Body")} />
+          <Section title={t("s8Title")} body={t("s8Body")} />
         </div>
       </div>
     </section>

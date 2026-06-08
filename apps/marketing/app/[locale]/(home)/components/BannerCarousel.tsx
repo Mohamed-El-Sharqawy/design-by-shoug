@@ -169,9 +169,8 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
       {banners.map((banner, index) => (
         <div
           key={banner.id}
-          className={`absolute inset-0 transition-opacity duration-500 ease-in-out select-none ${
-            index === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"
-          }`}
+          className={`absolute inset-0 transition-opacity duration-500 ease-in-out select-none ${index === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"
+            }`}
           draggable={false}
         >
           <Image
@@ -181,7 +180,7 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
             priority={index < 2}
             loading={index < 2 ? "eager" : "lazy"}
             className="object-cover object-center select-none pointer-events-none xl:hidden"
-            sizes="100vw"
+            sizes="(max-width: 1279px) 100vw, 1px"
             draggable={false}
           />
           <Image
@@ -191,7 +190,7 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
             priority={index < 2}
             loading={index < 2 ? "eager" : "lazy"}
             className="object-cover object-center select-none pointer-events-none hidden xl:block"
-            sizes="100vw"
+            sizes="(max-width: 1279px) 1px, 100vw"
             draggable={false}
           />
 
@@ -266,11 +265,10 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentIndex
-                  ? "bg-white w-6"
-                  : "bg-white/50 hover:bg-white/75"
-              }`}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentIndex
+                ? "bg-white w-6"
+                : "bg-white/50 hover:bg-white/75"
+                }`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}

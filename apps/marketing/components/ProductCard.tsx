@@ -31,16 +31,17 @@ export function ProductCard({ product }: ProductCardProps) {
     <>
       <div className="group block">
         <div className="relative aspect-3/4 overflow-hidden bg-[#FAF9F7] mb-4 rounded-xl">
-          <Link href={`/${locale}/products/${product.slug}`} className="block">
+          <Link href={`/${locale}/products/${product.slug}`} className="block w-full h-full">
             {primaryImage ? (
               <Image
                 src={primaryImage.url}
                 alt={name}
-                fill
+                width={400}
+                height={533}
                 fetchPriority="high"
                 loading="eager"
-                className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                sizes="(max-width: 1024px) 50vw, 25vw"
               />
             ) : (
               <div className="absolute inset-0 bg-[#E8E4DF] flex items-center justify-center">
